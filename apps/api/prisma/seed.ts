@@ -232,6 +232,119 @@ async function main() {
   }
   console.log('✅ Question bank seeded');
 
+  // ─── Sample candidates ────────────────────────────────────────────────
+  const candidate1 = await prisma.candidate.upsert({
+    where: { id: 'cand-0001-00000000000000000001' },
+    update: {},
+    create: {
+      id: 'cand-0001-00000000000000000001',
+      companyId: company.id,
+      createdById: recruiter.id,
+      firstName: 'Sarah',
+      lastName: 'Connor',
+      email: 'sarah.connor@example.com',
+      phone: '+1 555 0192',
+      currentRole: 'Senior Backend Engineer',
+      experienceYears: 6,
+      skills: ['Node.js', 'PostgreSQL', 'TypeScript', 'Docker', 'Redis'],
+      status: 'INTERVIEWING',
+    },
+  });
+
+  const candidate2 = await prisma.candidate.upsert({
+    where: { id: 'cand-0002-00000000000000000002' },
+    update: {},
+    create: {
+      id: 'cand-0002-00000000000000000002',
+      companyId: company.id,
+      createdById: recruiter.id,
+      firstName: 'Alex',
+      lastName: 'Rivera',
+      email: 'alex.rivera@example.com',
+      phone: '+1 555 0148',
+      currentRole: 'Full Stack Developer',
+      experienceYears: 4,
+      skills: ['React', 'Next.js', 'Node.js', 'TailwindCSS'],
+      status: 'NEXT_ROUND',
+    },
+  });
+  console.log('✅ Candidates seeded');
+
+  // ─── Sample interview records with notes & feedback ───────────────────
+  const interviewTypeBackend = await prisma.interviewType.findFirst({
+    where: { name: 'Node.js Technical' },
+  });
+
+  if (interviewTypeBackend) {
+    const now = new Date();
+    const pastStart = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+    const pastEnd = new Date(pastStart.getTime() + 60 * 60 * 1000);
+
+    const interview1 = await prisma.interview.upsert({
+      where: { id: 'intv-0001-00000000000000000001' },
+      update: {},
+      create: {
+        id: 'intv-0001-00000000000000000001',
+        candidateId: candidate1.id,
+        interviewerId: interviewer.id,
+        companyId: company.id,
+        interviewTypeId: interviewTypeBackend.id,
+        scheduledStart: pastStart,
+        scheduledEnd: pastEnd,
+        timezone: 'Asia/Kolkata',
+        status: 'COMPLETED',
+        roundNumber: 1,
+        notes: 'Candidate demonstrated great understanding of the Node.js event loop and asynchronous programming. Solved the concurrency problem in 20 minutes with clean TypeScript. Well-versed in PostgreSQL indexing and transactions.',
+        createdById: recruiter.id,
+      },
+    });
+
+    await prisma.interviewFeedback.upsert({
+      where: { interviewId: interview1.id },
+      update: {},
+      create: {
+        interviewId: interview1.id,
+        interviewerId: interviewer.id,
+        templateId: template.id,
+        scores: {
+          problem_solving: 5,
+          coding_proficiency: 4,
+          system_design: 4,
+          communication: 5,
+        },
+        overallScore: 4.5,
+        strengths: 'Strong analytical skills, fast coding speed, proactive communication, deep knowledge of async I/O.',
+        weaknesses: 'Could optimize memory allocation in buffer streams slightly better.',
+        recommendation: 'STRONG_HIRE',
+        submittedAt: new Date(),
+      },
+    });
+
+    // Upcoming round
+    const futureStart = new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000);
+    const futureEnd = new Date(futureStart.getTime() + 60 * 60 * 1000);
+
+    await prisma.interview.upsert({
+      where: { id: 'intv-0002-00000000000000000002' },
+      update: {},
+      create: {
+        id: 'intv-0002-00000000000000000002',
+        candidateId: candidate2.id,
+        interviewerId: interviewer.id,
+        companyId: company.id,
+        interviewTypeId: interviewTypeBackend.id,
+        scheduledStart: futureStart,
+        scheduledEnd: futureEnd,
+        timezone: 'Asia/Kolkata',
+        status: 'SCHEDULED',
+        roundNumber: 2,
+        notes: 'Focus on full-stack architecture, React state management, and API design.',
+        createdById: recruiter.id,
+      },
+    });
+    console.log('✅ Interviews and feedback scorecards seeded');
+  }
+
   console.log('\n🎉 Seed complete!');
   console.log('\nDefault credentials:');
   console.log('  Admin:       admin@intvwplt.com     / Admin@123456');

@@ -18,7 +18,8 @@ export const usersController = {
   },
 
   async getById(req: Request, res: Response) {
-    const user = await usersService.getById(req.params.id);
+    const id = req.params.id as string;
+    const user = await usersService.getById(id);
     sendSuccess(res, user);
   },
 
@@ -28,12 +29,14 @@ export const usersController = {
   },
 
   async update(req: Request, res: Response) {
-    const user = await usersService.update(req.params.id, req.body);
+    const id = req.params.id as string;
+    const user = await usersService.update(id, req.body);
     sendSuccess(res, user, 'User updated');
   },
 
   async delete(req: Request, res: Response) {
-    await usersService.delete(req.params.id);
+    const id = req.params.id as string;
+    await usersService.delete(id);
     sendNoContent(res);
   },
 };

@@ -1,0 +1,96 @@
+import { apiClient } from '@/lib/api-client';
+import type {
+  InterviewDto,
+  CreateInterviewDto,
+  UpdateInterviewDto,
+  UpdateInterviewNotesDto,
+  UpdateQuestionNotesDto,
+  InterviewFiltersDto,
+  PaginatedResponse,
+  ApiSuccessResponse,
+  InterviewStatus,
+} from '@intvwplt/shared';
+
+export const interviewsService = {
+  async list(filters?: InterviewFiltersDto & { page?: number; limit?: number }) {
+    const params = new URLSearchParams();
+    if (filters) {
+      if (filters.page) params.append('page', filters.page.toString());
+      if (filters.limit) params.append('limit', filters.limit.toString());
+      if (filters.companyId) params.append('companyId', filters.companyId);
+      if (filters.candidateId) params.append('candidateId', filters.candidateId);
+      if (filters.interviewerId) params.append('interviewerId', filters.interviewerId);
+      if (filters.status) params.append('status', filters.status);
+      if (filters.roundNumber) params.append('roundNumber', filters.roundNumber.toString());
+      if (filters.startDate) params.append('from', filters.startDate);
+      if (filters.endDate) params.append('to', filters.endDate);
+      if (filters.search) params.append('search', filters.search);
+    }
+
+    const response = await apiClient.get<any>(
+      `/interviews?${params.toString()}`,
+    );
+    const body = response.data;
+    if (body?.data?.items) {
+      return body.data as PaginatedResponse<InterviewDto>;
+    }
+    if (body?.items) {
+      return body as PaginatedResponse<InterviewDto>;
+    }
+    return {
+      items: Array.isArray(body?.data) ? body.data : Array.isArray(body) ? body : [],
+      pagination: body?.pagination || { page: 1, limit: 20, total: 0, totalPages: 1 },
+    };
+  },
+
+  async getById(id: string) {
+    const response = await apiClient.get<ApiSuccessResponse<InterviewDto>>(
+      `/interviews/${id}`,
+    );
+    return response.data.data;
+  },
+
+  async create(data: CreateInterviewDto) {
+    const response = await apiClient.post<ApiSuccessResponse<InterviewDto>>(
+      '/interviews',
+      data,
+    );
+    return response.data.data;
+  },
+
+  async update(id: string, data: UpdateInterviewDto) {
+    const response = await apiClient.patch<ApiSuccessResponse<InterviewDto>>(
+      `/interviews/${id}`,
+      data,
+    );
+    return response.data.data;
+  },
+
+  async updateStatus(id: string, status: InterviewStatus, cancelReason?: string) {
+    const response = await apiClient.patch<ApiSuccessResponse<InterviewDto>>(
+      `/interviews/${id}/status`,
+      { status, cancelReason },
+    );
+    return response.data.data;
+  },
+
+  async updateNotes(id: string, data: UpdateInterviewNotesDto) {
+    const response = await apiClient.patch<ApiSuccessResponse<{ notes: string }>>(
+      `/interviews/${id}/notes`,
+      data,
+    );
+    return response.data.data;
+  },
+
+  async updateQuestionNotes(
+    interviewId: string,
+    questionId: string,
+    data: UpdateQuestionNotesDto,
+  ) {
+    const response = await apiClient.patch<ApiSuccessResponse<any>>(
+      `/interviews/${interviewId}/questions/${questionId}`,
+      data,
+    );
+    return response.data.data;
+  },
+};

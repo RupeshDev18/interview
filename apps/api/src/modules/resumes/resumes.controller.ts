@@ -9,8 +9,9 @@ export const resumesController = {
       throw new ValidationError('No file uploaded');
     }
 
+    const candidateId = req.params.candidateId as string;
     const resume = await resumesService.upload(
-      req.params.candidateId,
+      candidateId,
       req.file,
       req.user!,
     );
@@ -18,17 +19,20 @@ export const resumesController = {
   },
 
   async list(req: Request, res: Response) {
-    const resumes = await resumesService.listForCandidate(req.params.candidateId, req.user!);
+    const candidateId = req.params.candidateId as string;
+    const resumes = await resumesService.listForCandidate(candidateId, req.user!);
     sendSuccess(res, resumes);
   },
 
   async getSignedUrl(req: Request, res: Response) {
-    const url = await resumesService.getSignedDownloadUrl(req.params.resumeId, req.user!);
+    const resumeId = req.params.resumeId as string;
+    const url = await resumesService.getSignedDownloadUrl(resumeId, req.user!);
     sendSuccess(res, { url, expiresInSeconds: 3600 });
   },
 
   async delete(req: Request, res: Response) {
-    await resumesService.delete(req.params.resumeId, req.user!);
+    const resumeId = req.params.resumeId as string;
+    await resumesService.delete(resumeId, req.user!);
     sendNoContent(res);
   },
 };

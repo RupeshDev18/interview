@@ -25,6 +25,7 @@ router.use(authenticate);
 // ── Candidates ────────────────────────────────────────────────────────────────
 router.get('/pipeline-counts', authorize('ADMIN', 'COMPANY_ADMIN', 'RECRUITER'), candidatesController.getPipelineCounts);
 router.get('/', authorize('ADMIN', 'COMPANY_ADMIN', 'RECRUITER'), candidatesController.list);
+router.get('/:id/dossier', authorize('ADMIN', 'COMPANY_ADMIN', 'RECRUITER', 'INTERVIEWER'), candidatesController.getDossier);
 router.get('/:id', authorize('ADMIN', 'COMPANY_ADMIN', 'RECRUITER', 'INTERVIEWER'), candidatesController.getById);
 router.post('/', authorize('ADMIN', 'COMPANY_ADMIN', 'RECRUITER'), validate(createCandidateSchema), candidatesController.create);
 router.patch('/:id', authorize('ADMIN', 'COMPANY_ADMIN', 'RECRUITER'), validate(updateCandidateSchema), candidatesController.update);

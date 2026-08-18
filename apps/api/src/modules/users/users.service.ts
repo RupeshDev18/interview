@@ -1,6 +1,6 @@
 import { usersRepository } from './users.repository';
 import { authRepository } from '../auth/auth.repository';
-import { authService } from '../auth/auth.service';
+import { sanitizeUser } from '../auth/auth.service';
 import { NotFoundError, ConflictError } from '../../utils/errors';
 import { normalizePagination, buildPaginationMeta } from '../../utils/pagination';
 import type { CreateUserInput, UpdateUserInput } from './users.validator';
@@ -48,7 +48,7 @@ export const usersService = {
       companyId: data.companyId,
     });
 
-    return authService.sanitizeUser(user);
+    return sanitizeUser(user);
   },
 
   async update(id: string, data: UpdateUserInput) {

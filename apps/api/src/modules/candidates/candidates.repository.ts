@@ -76,6 +76,54 @@ export const candidatesRepository = {
     });
   },
 
+  async findDossierById(id: string, companyId?: string) {
+    return prisma.candidate.findFirst({
+      where: { id, deletedAt: null, ...(companyId && { companyId }) },
+      include: {
+        company: { select: { id: true, name: true, logoUrl: true } },
+        resumes: {
+          where: { isActive: true },
+          orderBy: { uploadedAt: 'desc' },
+          select: { id: true, fileName: true, fileUrl: true, storageKey: true, mimeType: true, fileSize: true, uploadedAt: true },
+        },
+        interviews: {
+          orderBy: { roundNumber: 'asc' },
+          include: {
+            company: { select: { id: true, name: true, logoUrl: true } },
+            interviewType: {
+              include: {
+                evaluationTemplate: {
+                  include: {
+                    criteria: { orderBy: { sortOrder: 'asc' } },
+                  },
+                },
+              },
+            },
+            interviewer: {
+              include: {
+                user: {
+                  select: { id: true, firstName: true, lastName: true, email: true, role: true },
+                },
+              },
+            },
+            feedback: {
+              include: {
+                template: {
+                  include: {
+                    criteria: { orderBy: { sortOrder: 'asc' } },
+                  },
+                },
+              },
+            },
+            questions: {
+              orderBy: { sortOrder: 'asc' },
+            },
+          },
+        },
+      },
+    });
+  },
+
   async create(data: {
     companyId: string;
     createdById: string;

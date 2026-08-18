@@ -1,4 +1,11 @@
+import path from 'path';
+import dotenv from 'dotenv';
 import { z } from 'zod';
+
+// Load .env from apps/api/.env first, and fall back to root .env
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+dotenv.config(); // default cwd
 
 const envSchema = z.object({
   // Server

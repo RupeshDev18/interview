@@ -27,26 +27,48 @@
   }
 
   .dark {
-    --background: 224 71.4% 4.1%;
-    --foreground: 210 20% 98%;
-    --card: 224 71.4% 4.1%;
-    --card-foreground: 210 20% 98%;
-    --popover: 224 71.4% 4.1%;
-    --popover-foreground: 210 20% 98%;
-    --primary: 210 20% 98%;
-    --primary-foreground: 220.9 39.3% 11%;
-    --secondary: 215 27.9% 16.9%;
-    --secondary-foreground: 210 20% 98%;
-    --muted: 215 27.9% 16.9%;
-    --muted-foreground: 217.9 10.6% 64.9%;
-    --accent: 215 27.9% 16.9%;
-    --accent-foreground: 210 20% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 20% 98%;
-    --border: 215 27.9% 16.9%;
-    --input: 215 27.9% 16.9%;
-    --ring: 216 12.2% 83.9%;
+    --background: 24 33% 6%; /* #140E0A */
+    --foreground: 54 62% 95%; /* #FBF9E7 */
+    --card: 24 28% 10%; /* #211710 */
+    --card-foreground: 54 62% 95%;
+    --popover: 24 30% 9%;
+    --popover-foreground: 54 62% 95%;
+    --primary: 34 100% 50%; /* #FF8F00 */
+    --primary-foreground: 24 33% 6%;
+    --secondary: 43 100% 57%; /* #FFC123 */
+    --secondary-foreground: 24 33% 6%;
+    --muted: 24 20% 16%;
+    --muted-foreground: 34 25% 65%;
+    --accent: 356 68% 46%; /* #C4232B */
+    --accent-foreground: 54 62% 95%;
+    --destructive: 356 68% 46%;
+    --destructive-foreground: 54 62% 95%;
+    --border: 24 22% 18%; /* #382A20 */
+    --input: 24 22% 18%;
+    --ring: 34 100% 50%;
   }
+}
+
+.gradient-sunset {
+  background: linear-gradient(135deg, #FF8F00 0%, #FFC123 50%, #C4232B 100%);
+}
+
+.gradient-sunset-text {
+  background: linear-gradient(135deg, #FFC123 0%, #FF8F00 50%, #E83F46 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-sunset-btn {
+  background: linear-gradient(135deg, #FF8F00 0%, #E65100 100%);
+  color: #FBF9E7;
+  box-shadow: 0 4px 16px rgba(255, 143, 0, 0.25);
+  transition: all 0.2s ease;
+}
+
+.gradient-sunset-btn:hover {
+  background: linear-gradient(135deg, #FFA000 0%, #FF8F00 100%);
+  box-shadow: 0 6px 20px rgba(255, 143, 0, 0.4);
 }
 
 @layer base {

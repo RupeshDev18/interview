@@ -21,8 +21,15 @@ export const candidatesController = {
   },
 
   async getById(req: Request, res: Response) {
-    const candidate = await candidatesService.getById(req.params.id, req.user!);
+    const id = req.params.id as string;
+    const candidate = await candidatesService.getById(id, req.user!);
     sendSuccess(res, candidate);
+  },
+
+  async getDossier(req: Request, res: Response) {
+    const id = req.params.id as string;
+    const dossier = await candidatesService.getDossier(id, req.user!);
+    sendSuccess(res, dossier);
   },
 
   async create(req: Request, res: Response) {
@@ -31,17 +38,20 @@ export const candidatesController = {
   },
 
   async update(req: Request, res: Response) {
-    const candidate = await candidatesService.update(req.params.id, req.body, req.user!);
+    const id = req.params.id as string;
+    const candidate = await candidatesService.update(id, req.body, req.user!);
     sendSuccess(res, candidate, 'Candidate updated successfully');
   },
 
   async updateStatus(req: Request, res: Response) {
-    const candidate = await candidatesService.updateStatus(req.params.id, req.body, req.user!);
+    const id = req.params.id as string;
+    const candidate = await candidatesService.updateStatus(id, req.body, req.user!);
     sendSuccess(res, candidate, 'Candidate status updated');
   },
 
   async delete(req: Request, res: Response) {
-    await candidatesService.delete(req.params.id, req.user!);
+    const id = req.params.id as string;
+    await candidatesService.delete(id, req.user!);
     sendNoContent(res);
   },
 

@@ -2,20 +2,21 @@
   "name": "intvwplt",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "npm@10.9.4",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo run dev --parallel",
+    "dev": "turbo run dev",
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
-    "db:migrate": "turbo run db:migrate --filter=api",
-    "db:generate": "turbo run db:generate --filter=api",
-    "db:studio": "turbo run db:studio --filter=api",
-    "db:seed": "turbo run db:seed --filter=api"
+    "db:migrate": "turbo run db:migrate --filter=@intvwplt/api",
+    "db:generate": "turbo run db:generate --filter=@intvwplt/api",
+    "db:studio": "turbo run db:studio --filter=@intvwplt/api",
+    "db:seed": "turbo run db:seed --filter=@intvwplt/api"
   },
   "devDependencies": {
     "turbo": "^2.3.3",

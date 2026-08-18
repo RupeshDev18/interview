@@ -16,7 +16,8 @@ export const companiesController = {
   },
 
   async getById(req: Request, res: Response) {
-    const company = await companiesService.getById(req.params.id);
+    const id = req.params.id as string;
+    const company = await companiesService.getById(id);
     sendSuccess(res, company);
   },
 
@@ -26,12 +27,14 @@ export const companiesController = {
   },
 
   async update(req: Request, res: Response) {
-    const company = await companiesService.update(req.params.id, req.body as UpdateCompanyInput);
+    const id = req.params.id as string;
+    const company = await companiesService.update(id, req.body as UpdateCompanyInput);
     sendSuccess(res, company, 'Company updated successfully');
   },
 
   async delete(req: Request, res: Response) {
-    await companiesService.delete(req.params.id);
+    const id = req.params.id as string;
+    await companiesService.delete(id);
     sendNoContent(res);
   },
 };

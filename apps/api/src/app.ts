@@ -17,6 +17,10 @@ import { companiesRoutes } from './modules/companies/companies.routes';
 import { usersRoutes } from './modules/users/users.routes';
 import { candidatesRoutes } from './modules/candidates/candidates.routes';
 import { resumesRoutes } from './modules/resumes/resumes.routes';
+import { interviewsRoutes } from './modules/interviews/interviews.routes';
+import { feedbackRoutes } from './modules/feedback/feedback.routes';
+import { interviewTypesRoutes } from './modules/interview-types/interview-types.routes';
+import { interviewersRoutes } from './modules/interviewers/interviewers.routes';
 
 export function createApp(): express.Application {
   const app = express();
@@ -79,6 +83,10 @@ export function createApp(): express.Application {
   app.use(`${env.API_PREFIX}/users`, usersRoutes);
   app.use(`${env.API_PREFIX}/candidates`, candidatesRoutes);
   app.use(`${env.API_PREFIX}/resumes`, resumesRoutes);
+  app.use(`${env.API_PREFIX}/interviews`, interviewsRoutes);
+  app.use(`${env.API_PREFIX}/interviews`, feedbackRoutes);
+  app.use(`${env.API_PREFIX}/interview-types`, interviewTypesRoutes);
+  app.use(`${env.API_PREFIX}/interviewers`, interviewersRoutes);
 
   // ─── 404 handler ─────────────────────────────────────────────────────────
   app.use(notFoundHandler);

@@ -62,7 +62,7 @@ async function hashToken(token: string): Promise<string> {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
-export export function sanitizeUser(user: User) {
+export function sanitizeUser(user: User) {
   // Never return passwordHash or other sensitive fields
   const { passwordHash: _pw, ...safe } = user;
   return safe;

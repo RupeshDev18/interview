@@ -48,6 +48,41 @@ export const candidatesService = {
     return candidate;
   },
 
+  async getDossier(id: string, user: RequestingUser) {
+    const companyId = user.role === 'ADMIN' ? undefined : user.companyId;
+    const candidate = await candidatesRepository.findDossierById(id, companyId);
+    if (!candidate) throw new NotFoundError('Candidate');
+
+    const totalRounds = candidate.interviews.length;
+    const completedInterviews = candidate.interviews.filter(
+      (i) => i.status === 'COMPLETED' && i.feedback?.overallScore,
+    );
+    const completedRounds = completedInterviews.length;
+
+    let averageScore: number | null = null;
+    if (completedRounds > 0) {
+      const sum = completedInterviews.reduce(
+        (acc, i) => acc + Number(i.feedback!.overallScore),
+        0,
+      );
+      averageScore = Math.round((sum / completedRounds) * 100) / 100;
+    }
+
+    const latestFeedback = candidate.interviews
+      .slice()
+      .reverse()
+      .find((i) => i.feedback?.recommendation);
+
+    return {
+      candidate,
+      interviews: candidate.interviews,
+      totalRounds,
+      completedRounds,
+      averageScore,
+      finalRecommendation: latestFeedback?.feedback?.recommendation || null,
+    };
+  },
+
   async create(input: CreateCandidateInput, user: RequestingUser) {
     // Resolve companyId: admin can specify, others use their own company
     const companyId =

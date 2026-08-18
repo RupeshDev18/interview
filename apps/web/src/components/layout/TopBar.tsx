@@ -22,13 +22,19 @@ export function TopBar({ title }: TopBarProps) {
   const logout = useLogout();
 
   return (
-    <header className="h-14 border-b border-border bg-background/95 backdrop-blur sticky top-0 z-30 flex items-center px-6 justify-between">
+    <header className="h-14 border-b border-[#36271D] bg-[#150E0A]/90 backdrop-blur-md sticky top-0 z-30 flex items-center px-6 justify-between">
       {title && (
-        <h1 className="font-semibold text-foreground">{title}</h1>
+        <h1 className="font-bold text-sunset-cream text-base tracking-tight flex items-center gap-2">{title}</h1>
       )}
-      <div className="flex items-center gap-2 ml-auto">
-        {/* Notifications — Phase 9 */}
-        <Button variant="ghost" size="icon" className="relative" aria-label="Notifications">
+      <div className="flex items-center gap-3 ml-auto">
+        {/* Live System Indicator */}
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#231711] border border-[#3D2D22] text-[11px] font-mono text-sunset-amber">
+          <span className="w-2 h-2 rounded-full bg-sunset-orange animate-pulse" />
+          <span>Live Interview OS</span>
+        </div>
+
+        {/* Notifications */}
+        <Button variant="ghost" size="icon" className="relative text-stone-400 hover:text-sunset-cream hover:bg-[#231711]" aria-label="Notifications">
           <Bell className="h-4 w-4" />
         </Button>
 
@@ -36,13 +42,13 @@ export function TopBar({ title }: TopBarProps) {
         {user && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="gap-2 px-2">
-                <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-xs font-medium">
+              <Button variant="ghost" className="gap-2 px-2 hover:bg-[#231711] text-sunset-cream">
+                <div className="w-7 h-7 rounded-full bg-sunset-orange/20 border border-sunset-orange/30 flex items-center justify-center">
+                  <span className="text-xs font-semibold text-sunset-amber">
                     {user.firstName[0]}{user.lastName[0]}
                   </span>
                 </div>
-                <span className="text-sm hidden sm:block">
+                <span className="text-sm font-medium hidden sm:block text-sunset-cream">
                   {user.firstName} {user.lastName}
                 </span>
                 <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />

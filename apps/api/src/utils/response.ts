@@ -22,3 +22,19 @@ export function sendCreated<T>(res: Response, data: T, message?: string): void {
 export function sendNoContent(res: Response): void {
   res.status(204).send();
 }
+
+export function sendPaginated<T>(
+  res: Response,
+  items: T[],
+  pagination: { page: number; limit: number; total: number; totalPages: number },
+  message?: string,
+): void {
+  res.status(200).json({
+    success: true,
+    data: items,
+    items,
+    pagination,
+    ...(message && { message }),
+  });
+}
+
