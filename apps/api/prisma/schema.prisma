@@ -1,0 +1,494 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  COMPANY_ADMIN
+  RECRUITER
+  INTERVIEWER
+}
+
+enum CandidateStatus {
+  NEW
+  INTERVIEW_SCHEDULED
+  INTERVIEWING
+  NEXT_ROUND
+  ON_HOLD
+  REJECTED
+  HIRED
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum Recommendation {
+  STRONG_HIRE
+  HIRE
+  NEXT_ROUND
+  HOLD
+  REJECT
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum AvailabilityExceptionType {
+  UNAVAILABLE
+  AVAILABLE
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+// ─────────────────────────────────────────────
+// Company
+// ─────────────────────────────────────────────
+
+model Company {
+  id        String    @id @default(uuid())
+  name      String
+  email     String?
+  phone     String?
+  website   String?
+  logoUrl   String?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  users      User[]
+  candidates Candidate[]
+  interviews Interview[]
+
+  @@map("companies")
+}
+
+// ─────────────────────────────────────────────
+// User
+// ─────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  phone        String?
+  role         UserRole
+  isActive     Boolean   @default(true)
+  companyId    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastLoginAt  DateTime?
+  deletedAt    DateTime?
+
+  company          Company?       @relation(fields: [companyId], references: [id])
+  interviewer      Interviewer?
+  refreshTokens    RefreshToken[]
+  auditLogs        AuditLog[]     @relation("ActorAuditLogs")
+  createdCandidates Candidate[]   @relation("CreatedCandidates")
+  createdInterviews Interview[]   @relation("CreatedInterviews")
+  cancelledInterviews Interview[] @relation("CancelledInterviews")
+  uploadedResumes  Resume[]
+
+  @@index([email])
+  @@index([role])
+  @@index([companyId])
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────
+// Refresh Tokens
+// ─────────────────────────────────────────────
+
+model RefreshToken {
+  id           String    @id @default(uuid())
+  userId       String
+  tokenHash    String    @unique
+  familyId     String
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  replacedById String?   @unique
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime  @default(now())
+
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replacedBy  RefreshToken? @relation("TokenRotation", fields: [replacedById], references: [id])
+  replacedFor RefreshToken? @relation("TokenRotation")
+
+  @@index([userId])
+  @@index([familyId])
+  @@map("refresh_tokens")
+}
+
+// ─────────────────────────────────────────────
+// Candidate
+// ─────────────────────────────────────────────
+
+model Candidate {
+  id              String          @id @default(uuid())
+  companyId       String
+  createdById     String?
+  firstName       String
+  lastName        String
+  email           String?
+  phone           String?
+  location        String?
+  currentRole     String?
+  experienceYears Int?
+  skills          String[]
+  linkedinUrl     String?
+  status          CandidateStatus @default(NEW)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  deletedAt       DateTime?
+
+  company    Company     @relation(fields: [companyId], references: [id])
+  createdBy  User?       @relation("CreatedCandidates", fields: [createdById], references: [id])
+  resumes    Resume[]
+  interviews Interview[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([email])
+  @@index([companyId, status])
+  @@map("candidates")
+}
+
+// ─────────────────────────────────────────────
+// Resume
+// ─────────────────────────────────────────────
+
+model Resume {
+  id           String   @id @default(uuid())
+  candidateId  String
+  uploadedById String?
+  fileName     String
+  fileUrl      String
+  storageKey   String
+  mimeType     String?
+  fileSize     Int?
+  isActive     Boolean  @default(true)
+  uploadedAt   DateTime @default(now())
+
+  candidate  Candidate @relation(fields: [candidateId], references: [id])
+  uploadedBy User?     @relation(fields: [uploadedById], references: [id])
+
+  @@index([candidateId])
+  @@index([candidateId, isActive])
+  @@map("resumes")
+}
+
+// ─────────────────────────────────────────────
+// Interviewer
+// ─────────────────────────────────────────────
+
+model Interviewer {
+  id                String    @id @default(uuid())
+  userId            String    @unique
+  bio               String?
+  yearsOfExperience Int?
+  expertise         String[]
+  technologies      String[]
+  hourlyRate        Decimal?  @db.Decimal(10, 2)
+  timezone          String    @default("UTC")
+  isAvailable       Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+
+  user                 User                   @relation(fields: [userId], references: [id])
+  availabilityRules    AvailabilityRule[]
+  availabilityExceptions AvailabilityException[]
+  interviews           Interview[]
+  feedback             InterviewFeedback[]
+
+  @@map("interviewers")
+}
+
+// ─────────────────────────────────────────────
+// Availability
+// ─────────────────────────────────────────────
+
+model AvailabilityRule {
+  id           String   @id @default(uuid())
+  interviewerId String
+  dayOfWeek    Int      // 0 = Sunday, 6 = Saturday
+  startTime    String   // "HH:MM" in interviewer's timezone
+  endTime      String   // "HH:MM" in interviewer's timezone
+  timezone     String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  interviewer Interviewer @relation(fields: [interviewerId], references: [id])
+
+  @@unique([interviewerId, dayOfWeek, startTime, endTime])
+  @@index([interviewerId, dayOfWeek, isActive])
+  @@map("availability_rules")
+}
+
+model AvailabilityException {
+  id           String                   @id @default(uuid())
+  interviewerId String
+  date         DateTime                 @db.Date
+  startTime    String?                  // null = full day
+  endTime      String?
+  type         AvailabilityExceptionType
+  reason       String?
+  createdAt    DateTime                 @default(now())
+
+  interviewer Interviewer @relation(fields: [interviewerId], references: [id])
+
+  @@index([interviewerId, date])
+  @@map("availability_exceptions")
+}
+
+// ─────────────────────────────────────────────
+// Interview Types & Evaluation Templates
+// ─────────────────────────────────────────────
+
+model InterviewType {
+  id                   String     @id @default(uuid())
+  name                 String
+  description          String?
+  durationMinutes      Int
+  difficulty           Difficulty?
+  evaluationTemplateId String?
+  isActive             Boolean    @default(true)
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  deletedAt            DateTime?
+
+  evaluationTemplate EvaluationTemplate? @relation(fields: [evaluationTemplateId], references: [id])
+  interviews         Interview[]
+
+  @@map("interview_types")
+}
+
+model EvaluationTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  criteria      EvaluationCriteria[]
+  interviewTypes InterviewType[]
+  feedbacks      InterviewFeedback[]
+
+  @@map("evaluation_templates")
+}
+
+model EvaluationCriteria {
+  id          String  @id @default(uuid())
+  templateId  String
+  name        String
+  description String?
+  weight      Decimal @default(1.0) @db.Decimal(3, 2)
+  sortOrder   Int     @default(0)
+
+  template EvaluationTemplate @relation(fields: [templateId], references: [id])
+
+  @@index([templateId])
+  @@map("evaluation_criteria")
+}
+
+// ─────────────────────────────────────────────
+// Interview
+// ─────────────────────────────────────────────
+
+model Interview {
+  id              String          @id @default(uuid())
+  candidateId     String
+  interviewerId   String
+  companyId       String
+  interviewTypeId String
+  scheduledStart  DateTime
+  scheduledEnd    DateTime
+  actualStart     DateTime?
+  actualEnd       DateTime?
+  timezone        String
+  status          InterviewStatus @default(SCHEDULED)
+  meetingRoomId   String          @unique @default(uuid())
+  roundNumber     Int             @default(1)
+  notes           String?
+  cancelReason    String?
+  cancelledById   String?
+  createdById     String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  candidate     Candidate     @relation(fields: [candidateId], references: [id])
+  interviewer   Interviewer   @relation(fields: [interviewerId], references: [id])
+  company       Company       @relation(fields: [companyId], references: [id])
+  interviewType InterviewType @relation(fields: [interviewTypeId], references: [id])
+  createdBy     User          @relation("CreatedInterviews", fields: [createdById], references: [id])
+  cancelledBy   User?         @relation("CancelledInterviews", fields: [cancelledById], references: [id])
+  questions     InterviewQuestion[]
+  feedback      InterviewFeedback?
+
+  @@index([interviewerId, scheduledStart, scheduledEnd])
+  @@index([candidateId, roundNumber])
+  @@index([companyId, status])
+  @@index([scheduledStart])
+  @@index([meetingRoomId])
+  @@map("interviews")
+}
+
+// ─────────────────────────────────────────────
+// Interview Questions
+// ─────────────────────────────────────────────
+
+model InterviewQuestion {
+  id               String     @id @default(uuid())
+  interviewId      String
+  bankQuestionId   String?
+  questionText     String
+  category         String?
+  difficulty       Difficulty?
+  expectedAnswer   String?
+  candidateAnswer  String?
+  interviewerNotes String?
+  score            Int?
+  sortOrder        Int        @default(0)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  interview    Interview     @relation(fields: [interviewId], references: [id])
+  bankQuestion QuestionBank? @relation(fields: [bankQuestionId], references: [id])
+
+  @@index([interviewId])
+  @@map("interview_questions")
+}
+
+// ─────────────────────────────────────────────
+// Interview Feedback
+// ─────────────────────────────────────────────
+
+model InterviewFeedback {
+  id             String          @id @default(uuid())
+  interviewId    String          @unique
+  interviewerId  String
+  templateId     String?
+  scores         Json            @default("{}")
+  overallScore   Decimal?        @db.Decimal(3, 2)
+  strengths      String?
+  weaknesses     String?
+  concerns       String?
+  recommendation Recommendation
+  submittedAt    DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  interview  Interview          @relation(fields: [interviewId], references: [id])
+  interviewer Interviewer       @relation(fields: [interviewerId], references: [id])
+  template   EvaluationTemplate? @relation(fields: [templateId], references: [id])
+
+  @@map("interview_feedback")
+}
+
+// ─────────────────────────────────────────────
+// Question Bank
+// ─────────────────────────────────────────────
+
+model QuestionBank {
+  id             String     @id @default(uuid())
+  category       String
+  technology     String?
+  question       String
+  expectedAnswer String?
+  difficulty     Difficulty
+  tags           String[]
+  isActive       Boolean    @default(true)
+  createdById    String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  deletedAt      DateTime?
+
+  interviewQuestions InterviewQuestion[]
+
+  @@index([category])
+  @@index([technology])
+  @@index([difficulty])
+  @@map("question_bank")
+}
+
+// ─────────────────────────────────────────────
+// Notifications
+// ─────────────────────────────────────────────
+
+model Notification {
+  id            String              @id @default(uuid())
+  userId        String?
+  type          String
+  channel       NotificationChannel @default(EMAIL)
+  recipient     String
+  subject       String?
+  body          String?
+  status        NotificationStatus  @default(PENDING)
+  sentAt        DateTime?
+  failureReason String?
+  metadata      Json?
+  createdAt     DateTime            @default(now())
+
+  @@index([userId])
+  @@index([status])
+  @@map("notifications")
+}
+
+// ─────────────────────────────────────────────
+// Audit Log
+// ─────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  companyId  String?
+  action     String
+  entityType String?
+  entityId   String?
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation("ActorAuditLogs", fields: [actorId], references: [id])
+
+  @@index([actorId])
+  @@index([companyId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

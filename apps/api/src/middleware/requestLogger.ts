@@ -1,0 +1,15 @@
+import morgan from 'morgan';
+import { logger } from '../lib/logger';
+import { env } from '../config/env';
+
+// Stream morgan output into winston
+const stream = {
+  write: (message: string) => {
+    logger.http(message.trim());
+  },
+};
+
+export const requestLogger = morgan(
+  env.NODE_ENV === 'production' ? 'combined' : 'dev',
+  { stream },
+);

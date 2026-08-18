@@ -1,0 +1,206 @@
+services:
+  # ─── PostgreSQL ──────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: intvwplt-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: intvwplt
+      POSTGRES_PASSWORD: intvwplt_secret
+      POSTGRES_DB: intvwplt
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U intvwplt -d intvwplt"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis ───────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: intvwplt-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ""
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Kafka (KRaft mode, no Zookeeper) ────────────────────────────────────
+  kafka:
+    image: bitnami/kafka:3.9
+    container_name: intvwplt-kafka
+    restart: unless-stopped
+    ports:
+      - "9092:9092"
+      - "9094:9094"
+    environment:
+      # KRaft mode — no Zookeeper required
+      KAFKA_CFG_NODE_ID: 1
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_CFG_NUM_PARTITIONS: 3
+      KAFKA_CFG_DEFAULT_REPLICATION_FACTOR: 1
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    volumes:
+      - kafka_data:/bitnami/kafka
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ─── Kafka UI ─────────────────────────────────────────────────────────────
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: intvwplt-kafka-ui
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      DYNAMIC_CONFIG_ENABLED: "true"
+
+  # ─── MinIO (S3-compatible object storage) ────────────────────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: intvwplt-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # ─── MinIO bucket initializer ────────────────────────────────────────────
+  minio-init:
+    image: minio/mc:latest
+    container_name: intvwplt-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin;
+      mc mb --ignore-existing local/intvwplt-resumes;
+      mc anonymous set download local/intvwplt-resumes;
+      echo 'MinIO bucket initialized';
+      "
+    restart: "no"
+
+  # ─── MailHog (SMTP trap for development emails) ──────────────────────────
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: intvwplt-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+    logging:
+      driver: none
+
+  # ─── Backend API ─────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+      target: development
+    container_name: intvwplt-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      minio:
+        condition: service_started
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./apps/api/src:/app/src
+      - ./apps/api/prisma:/app/prisma
+      - ./packages:/packages
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      DATABASE_URL: postgresql://intvwplt:intvwplt_secret@postgres:5432/intvwplt?schema=public
+      JWT_ACCESS_SECRET: dev_access_secret_change_in_production_must_be_32_chars_minimum
+      JWT_REFRESH_SECRET: dev_refresh_secret_change_in_production_must_be_32_chars_minimum
+      ACCESS_TOKEN_EXPIRES_IN: 10m
+      REFRESH_TOKEN_EXPIRES_IN: 7d
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_CLIENT_ID: intvwplt-api
+      KAFKA_GROUP_ID: intvwplt-consumers
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: intvwplt-resumes
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_FORCE_PATH_STYLE: "true"
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_FROM: noreply@intvwplt.com
+      SMTP_SECURE: "false"
+      CORS_ORIGINS: http://localhost:3000
+      COOKIE_SECRET: dev_cookie_secret_change_in_production
+
+  # ─── Frontend ────────────────────────────────────────────────────────────
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      target: development
+    container_name: intvwplt-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/web/src:/app/src
+      - ./packages:/packages
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NEXT_PUBLIC_SOCKET_URL: http://localhost:4000
+
+volumes:
+  postgres_data:
+  redis_data:
+  kafka_data:
+  minio_data:
+
+networks:
+  default:
+    name: intvwplt-network
