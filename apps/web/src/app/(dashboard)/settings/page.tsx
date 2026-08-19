@@ -1,28 +1,39 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Settings as SettingsIcon,
   User,
   Shield,
   Palette,
-  Bell,
-  Globe,
-  Save,
   CheckCircle2,
-  Lock,
   Building,
+  Mail,
+  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { useCurrentUser } from '@/hooks/use-auth';
 
 export default function SettingsPage() {
-  const [name, setName] = useState('Admin User');
-  const [email, setEmail] = useState('admin@intvwplt.com');
-  const [company, setCompany] = useState('Acme Corporation');
-  const [timezone, setTimezone] = useState('Asia/Kolkata (IST)');
+  const user = useCurrentUser();
+
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setFirstName(user.firstName || '');
+      setLastName(user.lastName || '');
+      setEmail(user.email || '');
+      setPhone(user.phone || '');
+    }
+  }, [user]);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,10 +50,10 @@ export default function SettingsPage() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sunset-orange to-sunset-crimson flex items-center justify-center shadow-md shadow-sunset-orange/20">
               <SettingsIcon className="h-4 w-4 text-sunset-cream" />
             </div>
-            Platform Settings & Preferences
+            User Profile & Preferences
           </h1>
           <p className="text-sm text-stone-400 mt-1">
-            Configure your technical interview workspace, theme, and evaluator defaults.
+            Manage your account details, role permissions, and workspace preferences.
           </p>
         </div>
       </div>
@@ -50,76 +61,84 @@ export default function SettingsPage() {
       {savedSuccess && (
         <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2.5 animate-in fade-in">
           <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-          <span>Settings saved successfully!</span>
+          <span>Profile preferences saved successfully!</span>
         </div>
       )}
 
-      {/* Section 1: User Profile */}
+      {/* User Profile Card */}
       <div className="bg-[#18110C]/90 p-6 rounded-2xl border border-[#36271D] shadow-xl space-y-5">
-        <div className="flex items-center gap-2.5 border-b border-[#36271D] pb-3">
-          <User className="h-4 w-4 text-sunset-orange" />
-          <h2 className="text-base font-bold text-sunset-cream">Profile Information</h2>
+        <div className="flex items-center justify-between border-b border-[#36271D] pb-3">
+          <div className="flex items-center gap-2.5">
+            <User className="h-4 w-4 text-sunset-orange" />
+            <h2 className="text-base font-bold text-sunset-cream">Personal Information</h2>
+          </div>
+          {user?.role && (
+            <Badge variant="outline" className="border-sunset-orange/40 text-sunset-amber bg-sunset-orange/10 font-mono text-xs">
+              Role: {user.role}
+            </Badge>
+          )}
         </div>
 
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-stone-300">Full Name</Label>
+              <Label className="text-xs font-semibold text-stone-300">First Name</Label>
               <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
                 className="bg-[#120B07] border-[#36271D] text-sunset-cream text-xs focus-visible:ring-sunset-orange"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-stone-300">Email Address</Label>
+              <Label className="text-xs font-semibold text-stone-300">Last Name</Label>
               <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-[#120B07] border-[#36271D] text-sunset-cream text-xs focus-visible:ring-sunset-orange font-mono"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="bg-[#120B07] border-[#36271D] text-sunset-cream text-xs focus-visible:ring-sunset-orange"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-stone-300">Organization / Tenant</Label>
+              <Label className="text-xs font-semibold text-stone-300">Email Address</Label>
               <Input
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                className="bg-[#120B07] border-[#36271D] text-sunset-cream text-xs focus-visible:ring-sunset-orange"
+                type="email"
+                disabled
+                value={email}
+                className="bg-[#120B07] border-[#36271D] text-stone-400 text-xs font-mono opacity-80 cursor-not-allowed"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-stone-300">Preferred Timezone</Label>
+              <Label className="text-xs font-semibold text-stone-300">Phone Number</Label>
               <Input
-                value={timezone}
-                onChange={(e) => setTimezone(e.target.value)}
-                className="bg-[#120B07] border-[#36271D] text-sunset-cream text-xs focus-visible:ring-sunset-orange font-mono"
+                placeholder="+1 (555) 000-0000"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="bg-[#120B07] border-[#36271D] text-sunset-cream text-xs focus-visible:ring-sunset-orange"
               />
             </div>
           </div>
 
           <div className="pt-2">
             <Button type="submit" className="gradient-sunset-btn text-xs font-semibold gap-1.5">
-              <Save className="h-4 w-4" /> Save Changes
+              Save Changes
             </Button>
           </div>
         </form>
       </div>
 
-      {/* Section 2: Active Theme Palette */}
+      {/* Palette Info Card */}
       <div className="bg-[#18110C]/90 p-6 rounded-2xl border border-[#36271D] shadow-xl space-y-5">
         <div className="flex items-center gap-2.5 border-b border-[#36271D] pb-3">
           <Palette className="h-4 w-4 text-sunset-amber" />
-          <h2 className="text-base font-bold text-sunset-cream">Obsidian Sunset Color Tokens</h2>
+          <h2 className="text-base font-bold text-sunset-cream">Theme Tokens & Design System</h2>
         </div>
 
         <p className="text-xs text-stone-400">
-          The platform interface is rendered in real time using the Obsidian Sunset palette.
+          InterviewOS is tuned with the <strong>Obsidian Sunset</strong> theme for high readability during prolonged interview sessions.
         </p>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -136,15 +155,15 @@ export default function SettingsPage() {
               #FFC123
             </div>
             <span className="text-xs font-bold text-sunset-amber block">Golden Amber</span>
-            <span className="text-[10px] text-stone-400 block">Highlights & Stars</span>
+            <span className="text-[10px] text-stone-400 block">Highlights & Badges</span>
           </div>
 
           <div className="p-3 rounded-xl bg-[#20150F] border border-[#36271D] space-y-2">
             <div className="h-10 rounded-lg bg-[#FF8F00] shadow-inner flex items-center justify-center font-mono text-[10px] text-white font-bold">
               #FF8F00
             </div>
-            <span className="text-xs font-bold text-sunset-orange block">Tangerine Orange</span>
-            <span className="text-[10px] text-stone-400 block">Primary Action Buttons</span>
+            <span className="text-xs font-bold text-sunset-orange block">Sunset Orange</span>
+            <span className="text-[10px] text-stone-400 block">Primary Actions</span>
           </div>
 
           <div className="p-3 rounded-xl bg-[#20150F] border border-[#36271D] space-y-2">
@@ -152,7 +171,7 @@ export default function SettingsPage() {
               #C4232B
             </div>
             <span className="text-xs font-bold text-sunset-crimson block">Deep Crimson</span>
-            <span className="text-[10px] text-stone-400 block">Critical Alerts & Rejects</span>
+            <span className="text-[10px] text-stone-400 block">Critical Alerts</span>
           </div>
         </div>
       </div>

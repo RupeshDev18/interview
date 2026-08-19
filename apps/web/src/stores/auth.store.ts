@@ -6,6 +6,7 @@ export interface AuthUser {
   email: string;
   firstName: string;
   lastName: string;
+  phone?: string | null;
   role: UserRole;
   companyId?: string;
   isActive: boolean;

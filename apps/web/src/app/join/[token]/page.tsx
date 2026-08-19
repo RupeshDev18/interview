@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation';
 
-export default function JoinRedirectPage({
+export default async function JoinRedirectPage({
   params,
 }: {
-  params: { token: string };
+  params: Promise<{ token: string }>;
 }) {
-  redirect(`/interview/join/${params.token}`);
+  const { token } = await params;
+  redirect(`/interview/join/${token}`);
 }
