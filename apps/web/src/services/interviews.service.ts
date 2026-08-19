@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { apiClient } from '@/lib/api-client';
 import type {
   InterviewDto,
@@ -9,7 +10,10 @@ import type {
   PaginatedResponse,
   ApiSuccessResponse,
   InterviewStatus,
+  CandidateJoinDetailsDto,
 } from '@intvwplt/shared';
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
 export const interviewsService = {
   async list(filters?: InterviewFiltersDto & { page?: number; limit?: number }) {
@@ -98,4 +102,12 @@ export const interviewsService = {
     const response = await apiClient.post<ApiSuccessResponse<{ token: string; expiresAt: string }>>(`/interviews/${id}/candidate-link`);
     return response.data.data;
   },
+
+  async getCandidateJoinDetails(token: string) {
+    const response = await axios.get<ApiSuccessResponse<CandidateJoinDetailsDto>>(
+      `${BASE_URL}/api/v1/interviews/candidate/join/${token}`,
+    );
+    return response.data.data;
+  },
 };
+

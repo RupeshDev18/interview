@@ -72,4 +72,11 @@ export const interviewsController = {
     const result = await candidateLinkService.create(req.params.id as string, req.user!);
     sendSuccess(res, result, 'Candidate link generated');
   },
+
+  async getCandidateJoinDetails(req: Request, res: Response): Promise<void> {
+    const token = req.params.token as string;
+    const result = await candidateLinkService.verifyToken(token);
+    sendSuccess(res, result, 'Candidate interview details retrieved');
+  },
 };
+

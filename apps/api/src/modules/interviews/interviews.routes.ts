@@ -13,6 +13,9 @@ import {
 
 const router = Router();
 
+// Public Candidate Meeting Details (No Login Required)
+router.get('/candidate/join/:token', interviewsController.getCandidateJoinDetails);
+
 router.use(authenticate);
 
 // List & Get

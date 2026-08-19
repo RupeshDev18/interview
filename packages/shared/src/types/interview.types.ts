@@ -219,3 +219,26 @@ export interface CandidateDossierDto {
   averageScore?: number | null;
   finalRecommendation?: Recommendation | null;
 }
+
+export interface CandidateJoinDetailsDto {
+  interviewId: string;
+  meetingRoomId: string;
+  scheduledStart: string;
+  scheduledEnd: string;
+  timezone: string;
+  status: InterviewStatus;
+  candidate: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  company: {
+    name: string;
+    logoUrl?: string | null;
+  };
+  interviewType: {
+    name: string;
+    durationMinutes: number;
+  };
+  interviewerName: string;
+}
