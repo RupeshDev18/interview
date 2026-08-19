@@ -5,6 +5,8 @@ import { logger } from './lib/logger';
 import { connectDatabase, disconnectDatabase } from './lib/prisma';
 import { disconnectRedis } from './lib/redis';
 import { initSocketServer } from './lib/socket';
+import { initNotificationConsumer } from './events/kafka/consumers/notification.consumer';
+import { disconnectKafka } from './lib/kafka';
 
 async function bootstrap(): Promise<void> {
   // Connect to infrastructure
@@ -14,6 +16,11 @@ async function bootstrap(): Promise<void> {
   const httpServer = createServer(app);
 
   initSocketServer(httpServer);
+
+  // Initialize event consumers (non-blocking)
+  initNotificationConsumer().catch((err) => {
+    logger.warn('Kafka consumer initialization skipped:', { error: err });
+  });
 
   const server = httpServer.listen(env.PORT, () => {
     logger.info(`🚀 API server running`, {
@@ -31,6 +38,7 @@ async function bootstrap(): Promise<void> {
       try {
         await disconnectDatabase();
         await disconnectRedis();
+        await disconnectKafka();
         logger.info('Graceful shutdown complete.');
         process.exit(0);
       } catch (err) {

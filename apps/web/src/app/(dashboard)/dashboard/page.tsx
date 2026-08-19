@@ -19,10 +19,14 @@ import {
   Briefcase,
   ExternalLink,
   RefreshCw,
+  Shield,
+  Building2,
+  BarChart3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCurrentUser } from '@/hooks/use-auth';
 import { interviewsService } from '@/services/interviews.service';
 import { candidatesService } from '@/services/candidates.service';
 import { ScheduleInterviewModal } from '@/features/interviews/components/ScheduleInterviewModal';
@@ -33,6 +37,11 @@ import type { InterviewDto, CandidateSummary } from '@intvwplt/shared';
 import { format, isPast, formatDistanceToNow } from 'date-fns';
 
 export default function DashboardPage() {
+  const user = useCurrentUser();
+  const isAdmin = user?.role === 'ADMIN';
+  const isCompanyAdmin = user?.role === 'COMPANY_ADMIN';
+  const hasAdminAccess = isAdmin || isCompanyAdmin;
+
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isAddCandidateOpen, setIsAddCandidateOpen] = useState(false);
   const [selectedInterviewId, setSelectedInterviewId] = useState<string | null>(null);
@@ -149,6 +158,72 @@ export default function DashboardPage() {
           </Button>
         </div>
       </div>
+
+      {/* Admin Quick Access Bar */}
+      {hasAdminAccess && (
+        <div className="p-4 rounded-xl bg-gradient-to-r from-sunset-orange/10 via-[#18110C] to-[#18110C] border border-sunset-orange/30 shadow-lg flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-sunset-orange/20 border border-sunset-orange/40 flex items-center justify-center text-sunset-orange">
+              <Shield className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-sunset-cream text-sm">
+                  {isAdmin ? 'System Administrator Portal' : 'Company Administration'}
+                </span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-sunset-orange/20 text-sunset-amber border border-sunset-orange/30">
+                  {user?.role}
+                </span>
+              </div>
+              <p className="text-xs text-stone-400">
+                Quick access to organization governance, analytics, and permissions.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              asChild
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs border-[#36271D] bg-[#120B07] text-sunset-cream hover:bg-[#251A13]"
+            >
+              <Link href="/admin/analytics">
+                <BarChart3 className="h-3.5 w-3.5 mr-1.5 text-sunset-orange" />
+                Analytics
+              </Link>
+            </Button>
+
+            {isAdmin && (
+              <>
+                <Button
+                  asChild
+                  size="sm"
+                  variant="outline"
+                  className="h-8 text-xs border-[#36271D] bg-[#120B07] text-sunset-cream hover:bg-[#251A13]"
+                >
+                  <Link href="/admin/companies">
+                    <Building2 className="h-3.5 w-3.5 mr-1.5 text-sunset-amber" />
+                    Companies
+                  </Link>
+                </Button>
+
+                <Button
+                  asChild
+                  size="sm"
+                  variant="outline"
+                  className="h-8 text-xs border-[#36271D] bg-[#120B07] text-sunset-cream hover:bg-[#251A13]"
+                >
+                  <Link href="/admin/users">
+                    <Shield className="h-3.5 w-3.5 mr-1.5 text-sunset-crimson" />
+                    Users
+                  </Link>
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 5-Card Sunset Metric Overview */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">

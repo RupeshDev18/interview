@@ -1,6 +1,9 @@
 import { createHash, randomBytes } from 'crypto';
 import { prisma } from '../../lib/prisma';
 import { AuthorizationError, NotFoundError } from '../../utils/errors';
+import { publishKafkaEvent } from '../../lib/kafka';
+import { KAFKA_TOPICS } from '../../events/kafka/topics';
+import { env } from '../../config/env';
 
 const hash = (token: string) => createHash('sha256').update(token).digest('hex');
 
@@ -8,6 +11,11 @@ export const candidateLinkService = {
   async create(interviewId: string, user: { role: string; companyId?: string }) {
     const interview = await prisma.interview.findFirst({
       where: { id: interviewId, ...(user.role === 'ADMIN' ? {} : { companyId: user.companyId }) },
+      include: {
+        candidate: true,
+        company: true,
+        interviewType: true,
+      },
     });
     if (!interview) throw new NotFoundError('Interview');
     if (user.role === 'INTERVIEWER') {
@@ -18,6 +26,21 @@ export const candidateLinkService = {
       Math.max(Date.now() + 60 * 60 * 1000, interview.scheduledEnd.getTime() + 24 * 60 * 60 * 1000),
     );
     await prisma.$executeRaw`UPDATE "interviews" SET "candidateJoinTokenHash" = ${hash(token)}, "candidateJoinExpiresAt" = ${expiresAt} WHERE id = ${interviewId}`;
+
+    const webOrigin = env.CORS_ORIGINS.split(',')[0].trim();
+    if (interview.candidate.email) {
+      publishKafkaEvent(KAFKA_TOPICS.CANDIDATE_LINK_CREATED, {
+        interviewId,
+        candidateEmail: interview.candidate.email,
+        candidateName: `${interview.candidate.firstName} ${interview.candidate.lastName}`,
+        companyName: interview.company.name,
+        interviewTypeName: interview.interviewType.name,
+        scheduledStart: interview.scheduledStart.toISOString(),
+        timezone: interview.timezone,
+        joinUrl: `${webOrigin}/interview/join/${token}`,
+      }).catch(() => {});
+    }
+
     return { token, expiresAt };
   },
 
