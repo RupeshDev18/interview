@@ -21,6 +21,7 @@ import { interviewsRoutes } from './modules/interviews/interviews.routes';
 import { feedbackRoutes } from './modules/feedback/feedback.routes';
 import { interviewTypesRoutes } from './modules/interview-types/interview-types.routes';
 import { interviewersRoutes } from './modules/interviewers/interviewers.routes';
+import { questionsRoutes, interviewQuestionsRoutes } from './modules/questions/questions.routes';
 
 export function createApp(): express.Application {
   const app = express();
@@ -87,6 +88,8 @@ export function createApp(): express.Application {
   app.use(`${env.API_PREFIX}/interviews`, feedbackRoutes);
   app.use(`${env.API_PREFIX}/interview-types`, interviewTypesRoutes);
   app.use(`${env.API_PREFIX}/interviewers`, interviewersRoutes);
+  app.use(`${env.API_PREFIX}/questions`, questionsRoutes);
+  app.use(`${env.API_PREFIX}/interviews`, interviewQuestionsRoutes);
 
   // ─── 404 handler ─────────────────────────────────────────────────────────
   app.use(notFoundHandler);

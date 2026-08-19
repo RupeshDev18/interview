@@ -2,6 +2,8 @@ import { apiClient } from '@/lib/api-client';
 import type {
   InterviewerSummary,
   ApiSuccessResponse,
+  AvailabilityRuleDto,
+  AvailabilityExceptionDto,
 } from '@intvwplt/shared';
 
 export const interviewersService = {
@@ -27,5 +29,34 @@ export const interviewersService = {
       `/interviewers/${id}`,
     );
     return response.data.data;
+  },
+
+  async getMine() {
+    const response = await apiClient.get<ApiSuccessResponse<InterviewerSummary>>('/interviewers/me');
+    return response.data.data;
+  },
+
+  async getAvailabilityRules(id: string) {
+    const response = await apiClient.get<ApiSuccessResponse<AvailabilityRuleDto[]>>(`/interviewers/${id}/availability/rules`);
+    return response.data.data;
+  },
+
+  async replaceAvailabilityRules(id: string, rules: Array<Omit<AvailabilityRuleDto, 'id'>>) {
+    const response = await apiClient.put<ApiSuccessResponse<AvailabilityRuleDto[]>>(`/interviewers/${id}/availability/rules`, { rules });
+    return response.data.data;
+  },
+
+  async getAvailabilityExceptions(id: string, from: string, to: string) {
+    const response = await apiClient.get<ApiSuccessResponse<AvailabilityExceptionDto[]>>(`/interviewers/${id}/availability/exceptions`, { params: { from, to } });
+    return response.data.data;
+  },
+
+  async addAvailabilityException(id: string, input: Omit<AvailabilityExceptionDto, 'id'>) {
+    const response = await apiClient.post<ApiSuccessResponse<AvailabilityExceptionDto>>(`/interviewers/${id}/availability/exceptions`, input);
+    return response.data.data;
+  },
+
+  async deleteAvailabilityException(id: string, exceptionId: string) {
+    await apiClient.delete(`/interviewers/${id}/availability/exceptions/${exceptionId}`);
   },
 };

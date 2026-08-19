@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
  * The middleware.ts handles server-side redirect for the cookie check.
  */
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { isLoading, isAuthenticated, setAuth, clearAuth, setLoading } = useAuthStore();
+  const { isLoading, isAuthenticated, setAuth, setAccessToken, clearAuth, setLoading } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -27,6 +27,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     (async () => {
       try {
         const { accessToken } = await authApiService.refresh();
+        // `me()` uses the Axios interceptor, which reads its token from the store.
+        // Set it before requesting the user profile.
+        setAccessToken(accessToken);
         const user = await authApiService.me();
         if (!cancelled) {
           setAuth(user, accessToken);

@@ -4,6 +4,7 @@ import { env } from './config/env';
 import { logger } from './lib/logger';
 import { connectDatabase, disconnectDatabase } from './lib/prisma';
 import { disconnectRedis } from './lib/redis';
+import { initSocketServer } from './lib/socket';
 
 async function bootstrap(): Promise<void> {
   // Connect to infrastructure
@@ -12,8 +13,7 @@ async function bootstrap(): Promise<void> {
   const app = createApp();
   const httpServer = createServer(app);
 
-  // Socket.IO will be attached here in Phase 6
-  // initSocketServer(httpServer);
+  initSocketServer(httpServer);
 
   const server = httpServer.listen(env.PORT, () => {
     logger.info(`🚀 API server running`, {

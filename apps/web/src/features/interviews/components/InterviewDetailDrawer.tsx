@@ -65,6 +65,8 @@ export function InterviewDetailDrawer({
   // Status update
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [candidateLinkBusy, setCandidateLinkBusy] = useState(false);
+  const [candidateLinkCopied, setCandidateLinkCopied] = useState(false);
 
   useEffect(() => {
     if (!interviewId) return;
@@ -161,6 +163,21 @@ export function InterviewDetailDrawer({
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  const handleCopyCandidateLink = async () => {
+    if (!interview) return;
+    setCandidateLinkBusy(true);
+    try {
+      const { token } = await interviewsService.createCandidateLink(interview.id);
+      await navigator.clipboard.writeText(`${window.location.origin}/interview/join/${token}`);
+      setCandidateLinkCopied(true);
+      setTimeout(() => setCandidateLinkCopied(false), 2500);
+    } catch (error) {
+      console.error('Failed to create candidate link:', error);
+    } finally {
+      setCandidateLinkBusy(false);
+    }
+  };
+
   if (!interviewId) return null;
 
   return (
@@ -239,6 +256,17 @@ export function InterviewDetailDrawer({
             >
               {copiedLink ? <Check className="h-3.5 w-3.5 text-emerald-400 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1 text-sunset-amber" />}
               {copiedLink ? 'Link Copied' : 'Copy Room Link'}
+            </Button>
+
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCopyCandidateLink}
+              disabled={candidateLinkBusy}
+              className="h-7 text-xs border-[#3D2D22] text-stone-300 hover:text-sunset-cream bg-[#231711]"
+            >
+              {candidateLinkCopied ? <Check className="h-3.5 w-3.5 text-emerald-400 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1 text-sunset-amber" />}
+              {candidateLinkCopied ? 'Candidate Link Copied' : candidateLinkBusy ? 'Generating…' : 'Copy Candidate Link'}
             </Button>
 
             {interview && (

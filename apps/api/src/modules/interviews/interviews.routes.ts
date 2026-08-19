@@ -68,4 +68,10 @@ router.patch(
   interviewsController.updateQuestionNotes,
 );
 
+router.post(
+  '/:id/candidate-link',
+  authorize('ADMIN', 'COMPANY_ADMIN', 'RECRUITER'),
+  interviewsController.createCandidateLink,
+);
+
 export { router as interviewsRoutes };

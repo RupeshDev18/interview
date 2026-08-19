@@ -44,6 +44,23 @@ export interface InterviewerSummary {
   isAvailable: boolean;
 }
 
+export interface AvailabilityRuleDto {
+  id: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  timezone: string;
+}
+
+export interface AvailabilityExceptionDto {
+  id: string;
+  date: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  type: 'UNAVAILABLE' | 'AVAILABLE';
+  reason?: string | null;
+}
+
 export interface EvaluationCriteriaDto {
   id: string;
   name: string;

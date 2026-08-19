@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { interviewsService } from './interviews.service';
 import { sendSuccess, sendCreated, sendPaginated } from '../../utils/response';
 import type { InterviewStatus } from '@intvwplt/shared';
+import { candidateLinkService } from './candidate-link.service';
 
 export const interviewsController = {
   async list(req: Request, res: Response): Promise<void> {
@@ -65,5 +66,10 @@ export const interviewsController = {
       req.user!,
     );
     sendSuccess(res, result, 'Question notes updated');
+  },
+
+  async createCandidateLink(req: Request, res: Response): Promise<void> {
+    const result = await candidateLinkService.create(req.params.id as string, req.user!);
+    sendSuccess(res, result, 'Candidate link generated');
   },
 };

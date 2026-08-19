@@ -14,6 +14,7 @@
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
     "db:migrate": "turbo run db:migrate --filter=@intvwplt/api",
+    "db:push": "turbo run db:push --filter=@intvwplt/api",
     "db:generate": "turbo run db:generate --filter=@intvwplt/api",
     "db:studio": "turbo run db:studio --filter=@intvwplt/api",
     "db:seed": "turbo run db:seed --filter=@intvwplt/api"

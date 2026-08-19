@@ -93,4 +93,9 @@ export const interviewsService = {
     );
     return response.data.data;
   },
+
+  async createCandidateLink(id: string) {
+    const response = await apiClient.post<ApiSuccessResponse<{ token: string; expiresAt: string }>>(`/interviews/${id}/candidate-link`);
+    return response.data.data;
+  },
 };

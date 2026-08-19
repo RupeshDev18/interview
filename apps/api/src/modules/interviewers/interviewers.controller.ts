@@ -27,4 +27,9 @@ export const interviewersController = {
     const interviewer = await interviewersService.getById(id);
     sendSuccess(res, interviewer);
   },
+
+  async getMine(req: Request, res: Response): Promise<void> {
+    const interviewer = await interviewersService.getByUserId(req.user!.id);
+    sendSuccess(res, interviewer);
+  },
 };
