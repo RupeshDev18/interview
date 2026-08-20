@@ -68,25 +68,6 @@ export const companiesService = {
         },
       });
 
-      // 3. Seed Default Interview Types
-      const defaultTypes = [
-        { name: 'Initial Technical Screening', durationMinutes: 45 },
-        { name: 'Live Coding & Algorithms', durationMinutes: 60 },
-        { name: 'System Design & Architecture', durationMinutes: 60 },
-        { name: 'Hiring Manager & Culture Fit', durationMinutes: 45 },
-      ];
-
-      for (const t of defaultTypes) {
-        await tx.interviewType.create({
-          data: {
-            companyId: company.id,
-            name: t.name,
-            durationMinutes: t.durationMinutes,
-            isActive: true,
-          },
-        });
-      }
-
       return { company, adminUser };
     });
 

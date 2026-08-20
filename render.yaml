@@ -1,0 +1,73 @@
+services:
+  # ─────────────────────────────────────────────────────────────
+  # Backend API (Express, Prisma, Socket.IO WebRTC Mesh)
+  # ─────────────────────────────────────────────────────────────
+  - type: web
+    name: intvwplt-api
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build --workspace=@intvwplt/shared && npx prisma generate --schema=apps/api/prisma/schema.prisma && npx prisma db push --schema=apps/api/prisma/schema.prisma && npm run build --workspace=@intvwplt/api
+    startCommand: npm run start --workspace=@intvwplt/api
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      - key: PORT
+        value: 10000
+
+      - key: API_PREFIX
+        value: /api/v1
+
+      - key: DATABASE_URL
+        sync: false
+
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+
+      - key: ACCESS_TOKEN_EXPIRES_IN
+        value: 15m
+
+      - key: REFRESH_TOKEN_EXPIRES_IN
+        value: 7d
+
+      - key: COOKIE_SECRET
+        generateValue: true
+
+      - key: CORS_ORIGINS
+        value: https://intvwplt-web.onrender.com
+
+      - key: REDIS_URL
+        value: redis://localhost:6379
+
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "60000"
+
+      - key: RATE_LIMIT_MAX
+        value: "200"
+
+  # ─────────────────────────────────────────────────────────────
+  # Frontend Web Client (Next.js 15 App Router)
+  # ─────────────────────────────────────────────────────────────
+  - type: web
+    name: intvwplt-web
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build --workspace=@intvwplt/shared && npm run build --workspace=@intvwplt/web
+    startCommand: npm run start --workspace=@intvwplt/web
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      - key: PORT
+        value: 10000
+
+      - key: NEXT_PUBLIC_API_URL
+        value: https://intvwplt-api.onrender.com/api/v1
+
+      - key: NEXT_PUBLIC_SOCKET_URL
+        value: https://intvwplt-api.onrender.com
