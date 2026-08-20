@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { Eye, EyeOff, UserPlus, Shield } from 'lucide-react';
+import { Eye, EyeOff, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { registerSchema, type RegisterFormValues } from '@/schemas/auth.schemas';
 import { useRegister } from '@/hooks/use-auth';
@@ -32,109 +32,105 @@ export function RegisterForm() {
     <div className="w-full max-w-md space-y-6">
       {/* Brand Header */}
       <div className="text-center space-y-2">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-sunset-orange to-sunset-crimson shadow-lg shadow-sunset-orange/20 mb-2">
-          <span className="text-sunset-cream font-bold text-xl">IP</span>
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-theme-accent text-white shadow-md shadow-black/10 mb-2">
+          <span className="font-bold text-xl">IP</span>
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-sunset-cream">
+        <h1 className="text-2xl font-bold tracking-tight text-theme-primary">
           Create an Account
         </h1>
-        <p className="text-stone-400 text-sm">
+        <p className="text-theme-muted text-sm">
           Join InterviewOS to streamline your technical evaluations
         </p>
       </div>
 
       {/* Card */}
-      <div className="bg-[#18110C]/90 backdrop-blur-xl border border-[#36271D] rounded-2xl p-7 shadow-2xl space-y-5">
+      <div className="bg-card backdrop-blur-xl border border-theme rounded-2xl p-7 shadow-sm space-y-5">
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-sunset-cream text-xs font-semibold">First name</Label>
+              <Label className="text-theme-primary text-xs font-semibold">First name</Label>
               <Input
                 placeholder="Jane"
                 className={cn(
-                  'bg-[#120B07] border-[#36271D] text-sunset-cream placeholder:text-stone-600 focus-visible:ring-sunset-orange',
+                  'bg-surface border-theme text-theme-primary placeholder:text-theme-muted focus-visible:ring-theme-accent text-xs h-10',
                   errors.firstName && 'border-rose-500',
                 )}
                 {...register('firstName')}
               />
               {errors.firstName && (
-                <p className="text-rose-400 text-xs font-medium">{errors.firstName.message}</p>
+                <p className="text-xs text-rose-500">{errors.firstName.message}</p>
               )}
             </div>
-
             <div className="space-y-1.5">
-              <Label className="text-sunset-cream text-xs font-semibold">Last name</Label>
+              <Label className="text-theme-primary text-xs font-semibold">Last name</Label>
               <Input
                 placeholder="Doe"
                 className={cn(
-                  'bg-[#120B07] border-[#36271D] text-sunset-cream placeholder:text-stone-600 focus-visible:ring-sunset-orange',
+                  'bg-surface border-theme text-theme-primary placeholder:text-theme-muted focus-visible:ring-theme-accent text-xs h-10',
                   errors.lastName && 'border-rose-500',
                 )}
                 {...register('lastName')}
               />
               {errors.lastName && (
-                <p className="text-rose-400 text-xs font-medium">{errors.lastName.message}</p>
+                <p className="text-xs text-rose-500">{errors.lastName.message}</p>
               )}
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-sunset-cream text-xs font-semibold">Email address</Label>
+            <Label className="text-theme-primary text-xs font-semibold">Work Email</Label>
             <Input
               type="email"
-              autoComplete="email"
-              placeholder="jane.doe@company.com"
+              placeholder="jane@company.com"
               className={cn(
-                'bg-[#120B07] border-[#36271D] text-sunset-cream placeholder:text-stone-600 focus-visible:ring-sunset-orange',
+                'bg-surface border-theme text-theme-primary placeholder:text-theme-muted focus-visible:ring-theme-accent text-xs h-10',
                 errors.email && 'border-rose-500',
               )}
               {...register('email')}
             />
             {errors.email && (
-              <p className="text-rose-400 text-xs font-medium">{errors.email.message}</p>
+              <p className="text-xs text-rose-500">{errors.email.message}</p>
             )}
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-sunset-cream text-xs font-semibold">Password</Label>
+            <Label className="text-theme-primary text-xs font-semibold">Password</Label>
             <div className="relative">
               <Input
                 type={showPassword ? 'text' : 'password'}
-                autoComplete="new-password"
-                placeholder="Min 8 characters"
+                placeholder="••••••••"
                 className={cn(
-                  'bg-[#120B07] border-[#36271D] text-sunset-cream placeholder:text-stone-600 focus-visible:ring-sunset-orange pr-10',
+                  'bg-surface border-theme text-theme-primary placeholder:text-theme-muted pr-10 focus-visible:ring-theme-accent text-xs h-10',
                   errors.password && 'border-rose-500',
                 )}
                 {...register('password')}
               />
               <button
                 type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 hover:text-sunset-cream transition-colors"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-muted hover:text-theme-primary"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
             {errors.password && (
-              <p className="text-rose-400 text-xs font-medium">{errors.password.message}</p>
+              <p className="text-xs text-rose-500">{errors.password.message}</p>
             )}
           </div>
 
           <Button
             type="submit"
-            className="w-full gradient-sunset-btn font-semibold text-sm h-10 shadow-lg shadow-sunset-orange/20 mt-3"
+            className="w-full gradient-theme-btn h-10 text-xs font-bold shadow-md gap-2"
             disabled={isSubmitting || registerMutation.isPending}
           >
-            <UserPlus className="h-4 w-4 mr-2" />
-            {registerMutation.isPending ? 'Creating account…' : 'Create account'}
+            <UserPlus className="h-4 w-4" />
+            {registerMutation.isPending ? 'Creating Account…' : 'Create Organization Account'}
           </Button>
         </form>
 
-        <p className="text-center text-stone-400 text-xs">
+        <p className="text-center text-xs text-theme-muted">
           Already have an account?{' '}
-          <Link href="/login" className="text-sunset-amber hover:underline font-semibold transition-colors">
+          <Link href="/login" className="font-bold text-theme-accent hover:underline">
             Sign in
           </Link>
         </p>

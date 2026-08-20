@@ -171,11 +171,11 @@ export default function CandidateJoinPage() {
   // 1. Loading State
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0E0906] flex items-center justify-center p-6 text-sunset-cream">
-        <div className="w-full max-w-md space-y-4 p-8 rounded-2xl bg-[#18110C] border border-[#36271D]">
-          <Skeleton className="h-8 w-48 mx-auto" />
-          <Skeleton className="h-4 w-64 mx-auto" />
-          <Skeleton className="h-64 w-full rounded-xl" />
+      <div className="min-h-screen bg-theme-bg flex items-center justify-center p-6 text-theme-primary">
+        <div className="w-full max-w-md space-y-4 p-8 rounded-2xl bg-card border border-theme shadow-sm">
+          <Skeleton className="h-8 w-48 mx-auto bg-surface-subtle" />
+          <Skeleton className="h-4 w-64 mx-auto bg-surface-subtle" />
+          <Skeleton className="h-64 w-full rounded-xl bg-surface-subtle" />
         </div>
       </div>
     );
@@ -184,13 +184,13 @@ export default function CandidateJoinPage() {
   // 2. Error State
   if (error || !interviewData) {
     return (
-      <div className="min-h-screen bg-[#0E0906] flex items-center justify-center p-6 text-sunset-cream">
-        <div className="w-full max-w-md text-center p-8 rounded-2xl bg-[#18110C] border border-[#36271D] space-y-4 shadow-2xl">
-          <div className="w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 mx-auto flex items-center justify-center">
+      <div className="min-h-screen bg-theme-bg flex items-center justify-center p-6 text-theme-primary">
+        <div className="w-full max-w-md text-center p-8 rounded-2xl bg-card border border-theme space-y-4 shadow-sm">
+          <div className="w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-500 mx-auto flex items-center justify-center">
             <AlertCircle className="h-7 w-7" />
           </div>
-          <h1 className="text-xl font-bold text-sunset-cream">Interview Link Invalid</h1>
-          <p className="text-sm text-stone-400 leading-relaxed">{error}</p>
+          <h1 className="text-xl font-bold text-theme-primary">Interview Link Invalid</h1>
+          <p className="text-sm text-theme-muted leading-relaxed">{error}</p>
         </div>
       </div>
     );
@@ -199,19 +199,19 @@ export default function CandidateJoinPage() {
   // 3. Call Ended Screen
   if (isCallEnded) {
     return (
-      <div className="min-h-screen bg-[#0E0906] flex items-center justify-center p-6 text-sunset-cream">
-        <div className="w-full max-w-md text-center p-8 rounded-2xl bg-[#18110C] border border-[#36271D] space-y-5 shadow-2xl animate-in fade-in">
-          <div className="w-16 h-16 rounded-full bg-sunset-orange/20 border border-sunset-orange/30 text-sunset-amber mx-auto flex items-center justify-center shadow-lg">
+      <div className="min-h-screen bg-theme-bg flex items-center justify-center p-6 text-theme-primary">
+        <div className="w-full max-w-md text-center p-8 rounded-2xl bg-card border border-theme space-y-5 shadow-sm animate-in fade-in">
+          <div className="w-16 h-16 rounded-full bg-theme-accent/15 border border-theme-accent/30 text-theme-accent mx-auto flex items-center justify-center shadow-sm">
             <Sparkles className="h-8 w-8" />
           </div>
           <div className="space-y-1.5">
-            <h1 className="text-xl font-bold text-sunset-cream">Interview Finished</h1>
-            <p className="text-sm text-stone-400">
+            <h1 className="text-xl font-bold text-theme-primary">Interview Finished</h1>
+            <p className="text-sm text-theme-muted">
               Thank you for attending your interview with{' '}
-              <span className="text-sunset-cream font-semibold">{interviewData.company.name}</span>.
+              <span className="text-theme-primary font-semibold">{interviewData.company.name}</span>.
             </p>
           </div>
-          <div className="p-4 rounded-xl bg-[#120B07] border border-[#36271D] text-xs text-stone-400 space-y-1">
+          <div className="p-4 rounded-xl bg-surface-subtle border border-theme text-xs text-theme-muted space-y-1">
             <p>Duration: {formatTimer(elapsedSeconds)}</p>
             <p>You may now close this browser window safely.</p>
           </div>
@@ -223,24 +223,24 @@ export default function CandidateJoinPage() {
   // 4. Pre-Join Screen (Lobby)
   if (!hasJoinedLobby) {
     return (
-      <div className="min-h-screen bg-[#0E0906] flex flex-col justify-between p-6 text-sunset-cream selection:bg-sunset-orange/30">
+      <div className="min-h-screen bg-theme-bg flex flex-col justify-between p-6 text-theme-primary">
         {/* Header */}
-        <header className="max-w-5xl mx-auto w-full flex items-center justify-between py-2 border-b border-[#36271D]/60">
+        <header className="max-w-5xl mx-auto w-full flex items-center justify-between py-2 border-b border-theme">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sunset-orange to-sunset-crimson flex items-center justify-center text-white font-bold text-sm shadow-md">
+            <div className="w-8 h-8 rounded-lg bg-theme-accent flex items-center justify-center text-white font-bold text-sm shadow-md shadow-black/10">
               {interviewData.company.name.charAt(0)}
             </div>
             <div>
-              <span className="text-sm font-bold text-sunset-cream">
+              <span className="text-sm font-bold text-theme-primary">
                 {interviewData.company.name}
               </span>
-              <span className="text-xs text-stone-400 ml-2 font-mono">
+              <span className="text-xs text-theme-muted ml-2 font-mono">
                 Candidate Interview Portal
               </span>
             </div>
           </div>
 
-          <Badge variant="outline" className="text-xs border-emerald-500/30 text-emerald-400 bg-emerald-500/10">
+          <Badge variant="outline" className="text-xs border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">
             <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Secure Session
           </Badge>
         </header>
@@ -249,7 +249,7 @@ export default function CandidateJoinPage() {
         <main className="max-w-4xl mx-auto w-full my-auto py-8 grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
           {/* Left Preview Box */}
           <div className="md:col-span-7 space-y-4">
-            <div className="relative aspect-video rounded-2xl bg-black border border-[#36271D] overflow-hidden shadow-2xl flex items-center justify-center">
+            <div className="relative aspect-video rounded-2xl bg-black border border-theme overflow-hidden shadow-md flex items-center justify-center">
               <video
                 ref={previewVideoRef}
                 autoPlay
@@ -259,11 +259,11 @@ export default function CandidateJoinPage() {
               />
 
               {!previewCam && (
-                <div className="text-center space-y-2">
-                  <div className="w-16 h-16 rounded-full bg-[#20150F] text-stone-500 mx-auto flex items-center justify-center">
+                <div className="text-center space-y-2 text-stone-400">
+                  <div className="w-16 h-16 rounded-full bg-stone-800 text-stone-400 mx-auto flex items-center justify-center">
                     <VideoOff className="h-8 w-8" />
                   </div>
-                  <p className="text-xs text-stone-500">Camera is turned off</p>
+                  <p className="text-xs">Camera is turned off</p>
                 </div>
               )}
 
@@ -274,7 +274,7 @@ export default function CandidateJoinPage() {
                   onClick={togglePreviewMic}
                   className={`p-2.5 rounded-full transition-all ${
                     previewMic
-                      ? 'bg-white/10 text-sunset-cream hover:bg-white/20'
+                      ? 'bg-white/10 text-white hover:bg-white/20'
                       : 'bg-rose-500/80 text-white'
                   }`}
                   title={previewMic ? 'Mute Microphone' : 'Unmute Microphone'}
@@ -287,7 +287,7 @@ export default function CandidateJoinPage() {
                   onClick={togglePreviewCam}
                   className={`p-2.5 rounded-full transition-all ${
                     previewCam
-                      ? 'bg-white/10 text-sunset-cream hover:bg-white/20'
+                      ? 'bg-white/10 text-white hover:bg-white/20'
                       : 'bg-rose-500/80 text-white'
                   }`}
                   title={previewCam ? 'Turn Off Camera' : 'Turn On Camera'}
@@ -296,36 +296,36 @@ export default function CandidateJoinPage() {
                 </button>
               </div>
             </div>
-            <p className="text-center text-xs text-stone-500">
+            <p className="text-center text-xs text-theme-muted">
               Check your lighting, camera position, and microphone before entering.
             </p>
           </div>
 
           {/* Right Details & Join Card */}
           <div className="md:col-span-5 space-y-6">
-            <div className="p-6 rounded-2xl bg-[#18110C] border border-[#36271D] space-y-5 shadow-xl">
+            <div className="p-6 rounded-2xl bg-card border border-theme space-y-5 shadow-sm">
               <div>
-                <span className="text-[11px] font-semibold text-sunset-amber uppercase tracking-wider font-mono">
+                <span className="text-[11px] font-semibold text-theme-accent uppercase tracking-wider font-mono">
                   Welcome, {interviewData.candidate.firstName}!
                 </span>
-                <h2 className="text-xl font-bold text-sunset-cream mt-1">
+                <h2 className="text-xl font-bold text-theme-primary mt-1">
                   {interviewData.interviewType.name}
                 </h2>
               </div>
 
-              <div className="space-y-3 text-xs text-stone-300">
+              <div className="space-y-3 text-xs text-theme-muted">
                 <div className="flex items-center gap-2.5">
-                  <User className="h-4 w-4 text-sunset-orange shrink-0" />
-                  <span>Interviewer: <strong className="text-sunset-cream">{interviewData.interviewerName}</strong></span>
+                  <User className="h-4 w-4 text-theme-accent shrink-0" />
+                  <span>Interviewer: <strong className="text-theme-primary">{interviewData.interviewerName}</strong></span>
                 </div>
 
                 <div className="flex items-center gap-2.5">
-                  <Clock className="h-4 w-4 text-sunset-orange shrink-0" />
-                  <span>Duration: <strong className="text-sunset-cream">{interviewData.interviewType.durationMinutes} minutes</strong></span>
+                  <Clock className="h-4 w-4 text-theme-accent shrink-0" />
+                  <span>Duration: <strong className="text-theme-primary">{interviewData.interviewType.durationMinutes} minutes</strong></span>
                 </div>
 
                 <div className="flex items-center gap-2.5">
-                  <Calendar className="h-4 w-4 text-sunset-orange shrink-0" />
+                  <Calendar className="h-4 w-4 text-theme-accent shrink-0" />
                   <span>
                     {format(new Date(interviewData.scheduledStart), 'MMM d, yyyy • h:mm a')} ({interviewData.timezone})
                   </span>
@@ -335,7 +335,7 @@ export default function CandidateJoinPage() {
               <div className="pt-2">
                 <Button
                   onClick={handleJoinCall}
-                  className="w-full h-11 text-sm gradient-sunset-btn font-bold rounded-xl shadow-lg shadow-sunset-orange/20"
+                  className="w-full h-11 text-sm gradient-theme-btn font-bold rounded-xl shadow-md"
                 >
                   Join Interview Room
                 </Button>
@@ -345,8 +345,8 @@ export default function CandidateJoinPage() {
         </main>
 
         {/* Footer */}
-        <footer className="text-center text-xs text-stone-600 py-3">
-          Powered by Interview Platform • No downloads or account required
+        <footer className="text-center text-xs text-theme-muted py-3">
+          Powered by InterviewOS • No downloads or account required
         </footer>
       </div>
     );
@@ -354,18 +354,18 @@ export default function CandidateJoinPage() {
 
   // 5. In-Meeting Video Room
   return (
-    <div className="min-h-screen bg-[#0E0906] flex flex-col text-sunset-cream">
+    <div className="min-h-screen bg-theme-bg flex flex-col text-theme-primary">
       {/* Meeting Top Bar */}
-      <header className="px-6 py-3 bg-[#120B07] border-b border-[#36271D] flex items-center justify-between">
+      <header className="px-6 py-3 bg-surface border-b border-theme flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sunset-orange to-sunset-crimson flex items-center justify-center text-white font-bold text-xs shadow-md">
+          <div className="w-8 h-8 rounded-lg bg-theme-accent flex items-center justify-center text-white font-bold text-xs shadow-md">
             {interviewData.company.name.charAt(0)}
           </div>
           <div>
-            <h1 className="text-sm font-bold text-sunset-cream leading-none">
+            <h1 className="text-sm font-bold text-theme-primary leading-none">
               {interviewData.interviewType.name}
             </h1>
-            <p className="text-[11px] text-stone-400 font-mono mt-1">
+            <p className="text-[11px] text-theme-muted font-mono mt-1">
               {interviewData.company.name} • {interviewData.interviewerName}
             </p>
           </div>
@@ -373,27 +373,27 @@ export default function CandidateJoinPage() {
 
         <div className="flex items-center gap-3">
           {/* Connection status badge */}
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#18110C] border border-[#36271D] text-xs">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-subtle border border-theme text-xs">
             {status === 'connected' ? (
               <>
-                <Wifi className="h-3.5 w-3.5 text-emerald-400" />
-                <span className="text-emerald-400 font-mono">Live</span>
+                <Wifi className="h-3.5 w-3.5 text-emerald-500" />
+                <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">Live</span>
               </>
             ) : status === 'connecting' ? (
               <>
-                <span className="w-2 h-2 rounded-full bg-sunset-amber animate-ping" />
-                <span className="text-sunset-amber font-mono">Connecting...</span>
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+                <span className="text-amber-600 dark:text-amber-400 font-mono">Connecting...</span>
               </>
             ) : (
               <>
-                <WifiOff className="h-3.5 w-3.5 text-stone-500" />
-                <span className="text-stone-400 font-mono">Waiting for interviewer</span>
+                <WifiOff className="h-3.5 w-3.5 text-theme-muted" />
+                <span className="text-theme-muted font-mono">Waiting for interviewer</span>
               </>
             )}
           </div>
 
           {/* Call Elapsed Timer */}
-          <div className="px-3 py-1 rounded-full bg-[#18110C] border border-[#36271D] text-xs font-mono text-stone-300">
+          <div className="px-3 py-1 rounded-full bg-surface-subtle border border-theme text-xs font-mono text-theme-primary font-bold">
             {formatTimer(elapsedSeconds)}
           </div>
         </div>
@@ -402,14 +402,14 @@ export default function CandidateJoinPage() {
       {/* Main Video Stage */}
       <main className="flex-1 p-6 flex flex-col items-center justify-center space-y-4">
         {permissionError && (
-          <div className="w-full max-w-4xl p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 shrink-0 text-amber-400" />
+          <div className="w-full max-w-4xl p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-300 text-xs flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
             <span>{permissionError}</span>
           </div>
         )}
         <div className="w-full max-w-6xl flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
           {/* Remote Video (Interviewer) */}
-          <div className="relative w-full aspect-video rounded-2xl bg-black border border-[#36271D] overflow-hidden shadow-2xl flex items-center justify-center">
+          <div className="relative w-full aspect-video rounded-2xl bg-black border border-theme overflow-hidden shadow-md flex items-center justify-center">
             <video
               ref={remoteVideoRef}
               autoPlay
@@ -418,15 +418,15 @@ export default function CandidateJoinPage() {
             />
 
             {status !== 'connected' && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-3 bg-[#120B07]/90">
-                <div className="w-16 h-16 rounded-full bg-sunset-orange/10 border border-sunset-orange/20 text-sunset-orange flex items-center justify-center">
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-3 bg-black/80">
+                <div className="w-16 h-16 rounded-full bg-theme-accent/20 border border-theme-accent/30 text-white flex items-center justify-center">
                   <User className="h-8 w-8" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-sunset-cream">
+                  <h3 className="text-sm font-semibold text-white">
                     Waiting for Interviewer
                   </h3>
-                  <p className="text-xs text-stone-400 mt-1 max-w-xs">
+                  <p className="text-xs text-stone-300 mt-1 max-w-xs">
                     {interviewData.interviewerName} will join the video room shortly.
                   </p>
                 </div>
@@ -434,14 +434,14 @@ export default function CandidateJoinPage() {
             )}
 
             {status === 'connected' && (
-              <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-lg border border-white/10 text-xs font-medium text-sunset-cream">
+              <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-lg border border-white/10 text-xs font-medium text-white">
                 {interviewData.interviewerName} (Interviewer)
               </div>
             )}
           </div>
 
           {/* Local Video (Candidate) */}
-          <div className="relative w-full aspect-video rounded-2xl bg-black border border-[#36271D] overflow-hidden shadow-2xl flex items-center justify-center">
+          <div className="relative w-full aspect-video rounded-2xl bg-black border border-theme overflow-hidden shadow-md flex items-center justify-center">
             <video
               ref={localVideoRef}
               autoPlay
@@ -451,15 +451,15 @@ export default function CandidateJoinPage() {
             />
 
             {!isCameraOn && (
-              <div className="text-center space-y-2">
-                <div className="w-14 h-14 rounded-full bg-[#20150F] text-stone-500 mx-auto flex items-center justify-center">
+              <div className="text-center space-y-2 text-stone-400">
+                <div className="w-14 h-14 rounded-full bg-stone-800 text-stone-400 mx-auto flex items-center justify-center">
                   <VideoOff className="h-7 w-7" />
                 </div>
-                <p className="text-xs text-stone-500">Your camera is off</p>
+                <p className="text-xs">Your camera is off</p>
               </div>
             )}
 
-            <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-lg border border-white/10 text-xs font-medium text-sunset-cream flex items-center gap-2">
+            <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-lg border border-white/10 text-xs font-medium text-white flex items-center gap-2">
               <span>{interviewData.candidate.firstName} (You)</span>
               {!isMicOn && <MicOff className="h-3.5 w-3.5 text-rose-400" />}
             </div>
@@ -468,15 +468,15 @@ export default function CandidateJoinPage() {
       </main>
 
       {/* Floating Bottom Control Bar */}
-      <footer className="py-4 px-6 bg-[#120B07] border-t border-[#36271D] flex items-center justify-center gap-4">
+      <footer className="py-4 px-6 bg-surface border-t border-theme flex items-center justify-center gap-4">
         <Button
           variant="outline"
           size="lg"
           onClick={toggleMic}
           className={`rounded-full w-12 h-12 p-0 border transition-all ${
             isMicOn
-              ? 'border-[#3D2D22] bg-[#20150F] text-sunset-cream hover:bg-[#2A1D16]'
-              : 'border-rose-500/50 bg-rose-500/20 text-rose-400 hover:bg-rose-500/30'
+              ? 'border-theme bg-surface text-theme-primary hover:bg-surface-subtle'
+              : 'border-rose-500/50 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20'
           }`}
           title={isMicOn ? 'Mute Microphone' : 'Unmute Microphone'}
         >
@@ -489,8 +489,8 @@ export default function CandidateJoinPage() {
           onClick={toggleCamera}
           className={`rounded-full w-12 h-12 p-0 border transition-all ${
             isCameraOn
-              ? 'border-[#3D2D22] bg-[#20150F] text-sunset-cream hover:bg-[#2A1D16]'
-              : 'border-rose-500/50 bg-rose-500/20 text-rose-400 hover:bg-rose-500/30'
+              ? 'border-theme bg-surface text-theme-primary hover:bg-surface-subtle'
+              : 'border-rose-500/50 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20'
           }`}
           title={isCameraOn ? 'Turn Off Camera' : 'Turn On Camera'}
         >
@@ -503,8 +503,8 @@ export default function CandidateJoinPage() {
           onClick={toggleScreenShare}
           className={`rounded-full w-12 h-12 p-0 border transition-all ${
             isScreenSharing
-              ? 'border-sunset-orange bg-sunset-orange/20 text-sunset-amber'
-              : 'border-[#3D2D22] bg-[#20150F] text-sunset-cream hover:bg-[#2A1D16]'
+              ? 'border-theme bg-theme-accent text-white'
+              : 'border-theme bg-surface text-theme-primary hover:bg-surface-subtle'
           }`}
           title={isScreenSharing ? 'Stop Screen Sharing' : 'Share Screen'}
         >
@@ -515,7 +515,7 @@ export default function CandidateJoinPage() {
           variant="destructive"
           size="lg"
           onClick={handleEndCall}
-          className="rounded-full px-6 h-12 bg-rose-600 hover:bg-rose-700 text-white font-bold gap-2 shadow-lg shadow-rose-600/30"
+          className="rounded-full px-6 h-12 bg-rose-600 hover:bg-rose-700 text-white font-bold gap-2 shadow-md shadow-rose-600/30"
         >
           <PhoneOff className="h-5 w-5" />
           <span>Leave</span>

@@ -154,25 +154,23 @@ export function ScheduleInterviewModal({
     }
   };
 
-  const selectedType = interviewTypes.find((t) => t.id === interviewTypeId);
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-[#18110C] border border-[#36271D] rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in">
+      <div className="bg-card border border-theme rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#36271D] bg-[#120B07]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-theme bg-surface-subtle">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sunset-orange to-sunset-crimson flex items-center justify-center text-sunset-cream shadow-md shadow-sunset-orange/20">
+            <div className="w-8 h-8 rounded-lg bg-theme-accent flex items-center justify-center text-white shadow-md shadow-black/10">
               <Calendar className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-sunset-cream">Schedule Technical Interview</h2>
-              <p className="text-xs text-stone-400">Create a new interview record with double-booking checks</p>
+              <h2 className="text-base font-bold text-theme-primary">Schedule Technical Interview</h2>
+              <p className="text-xs text-theme-muted">Create a new interview record with double-booking checks</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-stone-400 hover:text-sunset-cream hover:bg-[#251A13] transition-colors"
+            className="p-1 rounded-lg text-theme-muted hover:text-theme-primary hover:bg-surface transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -181,7 +179,7 @@ export function ScheduleInterviewModal({
         {/* Modal Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
           {errorMessage && (
-            <div className="p-3.5 rounded-xl bg-sunset-crimson/15 border border-sunset-crimson/30 text-rose-300 text-xs flex items-start gap-2.5">
+            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs flex items-start gap-2.5">
               <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
               <div className="leading-relaxed">{errorMessage}</div>
             </div>
@@ -190,11 +188,11 @@ export function ScheduleInterviewModal({
           {/* Row 1: Candidate & Round */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2 space-y-1.5">
-              <Label className="text-xs font-semibold text-stone-300">Candidate *</Label>
+              <Label className="text-xs font-semibold text-theme-primary">Candidate *</Label>
               <select
                 value={candidateId}
                 onChange={(e) => setCandidateId(e.target.value)}
-                className="w-full h-10 px-3 rounded-lg bg-[#120B07] border border-[#36271D] text-sunset-cream text-sm focus:outline-none focus:ring-1 focus:ring-sunset-orange"
+                className="w-full h-10 px-3 rounded-lg bg-surface border border-theme text-theme-primary text-sm focus:outline-none focus:ring-1 focus:ring-theme-accent"
               >
                 {candidates.map((cand) => (
                   <option key={cand.id} value={cand.id}>
@@ -205,14 +203,14 @@ export function ScheduleInterviewModal({
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-stone-300">Round #</Label>
+              <Label className="text-xs font-semibold text-theme-primary">Round #</Label>
               <Input
                 type="number"
                 min={1}
                 max={10}
                 value={roundNumber}
                 onChange={(e) => setRoundNumber(parseInt(e.target.value, 10) || 1)}
-                className="bg-[#120B07] border-[#36271D] text-sunset-cream font-mono"
+                className="bg-surface border-theme text-theme-primary font-mono text-sm"
               />
             </div>
           </div>
@@ -220,11 +218,11 @@ export function ScheduleInterviewModal({
           {/* Row 2: Interview Type & Interviewer */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-stone-300">Interview Type *</Label>
+              <Label className="text-xs font-semibold text-theme-primary">Interview Type *</Label>
               <select
                 value={interviewTypeId}
                 onChange={(e) => setInterviewTypeId(e.target.value)}
-                className="w-full h-10 px-3 rounded-lg bg-[#120B07] border border-[#36271D] text-sunset-cream text-sm focus:outline-none focus:ring-1 focus:ring-sunset-orange"
+                className="w-full h-10 px-3 rounded-lg bg-surface border border-theme text-theme-primary text-sm focus:outline-none focus:ring-1 focus:ring-theme-accent"
               >
                 {interviewTypes.map((t) => (
                   <option key={t.id} value={t.id}>
@@ -235,11 +233,11 @@ export function ScheduleInterviewModal({
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-stone-300">Assigned Interviewer *</Label>
+              <Label className="text-xs font-semibold text-theme-primary">Assigned Interviewer *</Label>
               <select
                 value={interviewerId}
                 onChange={(e) => setInterviewerId(e.target.value)}
-                className="w-full h-10 px-3 rounded-lg bg-[#120B07] border border-[#36271D] text-sunset-cream text-sm focus:outline-none focus:ring-1 focus:ring-sunset-orange"
+                className="w-full h-10 px-3 rounded-lg bg-surface border border-theme text-theme-primary text-sm focus:outline-none focus:ring-1 focus:ring-theme-accent"
               >
                 {interviewers.map((intv) => (
                   <option key={intv.id} value={intv.id}>
@@ -253,29 +251,29 @@ export function ScheduleInterviewModal({
           {/* Row 3: Date & Start Time */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-stone-300">Date *</Label>
+              <Label className="text-xs font-semibold text-theme-primary">Date *</Label>
               <Input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="bg-[#120B07] border-[#36271D] text-sunset-cream"
+                className="bg-surface border-theme text-theme-primary text-xs"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-stone-300">Start Time *</Label>
+              <Label className="text-xs font-semibold text-theme-primary">Start Time *</Label>
               <Input
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="bg-[#120B07] border-[#36271D] text-sunset-cream font-mono"
+                className="bg-surface border-theme text-theme-primary font-mono text-xs"
               />
             </div>
           </div>
 
           {/* Initial Meeting Notes */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-stone-300">
+            <Label className="text-xs font-semibold text-theme-primary">
               Briefing / Pre-Interview Notes (Optional)
             </Label>
             <textarea
@@ -283,15 +281,15 @@ export function ScheduleInterviewModal({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Focus areas, topics to test, or candidate background context..."
-              className="w-full p-2.5 rounded-lg bg-[#120B07] border border-[#36271D] text-sunset-cream text-xs placeholder:text-stone-600 focus:outline-none focus:ring-1 focus:ring-sunset-orange"
+              className="w-full p-2.5 rounded-lg bg-surface border border-theme text-theme-primary text-xs placeholder:text-theme-muted focus:outline-none focus:ring-1 focus:ring-theme-accent"
             />
           </div>
 
           {/* Initial Question Bank */}
-          <div className="space-y-2 pt-2 border-t border-[#36271D]">
-            <Label className="text-xs font-semibold text-stone-300 flex items-center justify-between">
+          <div className="space-y-2 pt-2 border-t border-theme">
+            <Label className="text-xs font-semibold text-theme-primary flex items-center justify-between">
               <span>Interview Questions Checklist (Optional)</span>
-              <span className="text-[11px] text-sunset-amber font-mono">{questions.length} questions attached</span>
+              <span className="text-[11px] text-theme-accent font-mono">{questions.length} questions attached</span>
             </Label>
 
             <div className="flex gap-2">
@@ -305,16 +303,16 @@ export function ScheduleInterviewModal({
                     handleAddQuestion();
                   }
                 }}
-                className="bg-[#120B07] border-[#36271D] text-xs text-sunset-cream"
+                className="bg-surface border-theme text-xs text-theme-primary"
               />
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 onClick={handleAddQuestion}
-                className="text-xs shrink-0 bg-[#251A13] hover:bg-[#332219] text-sunset-cream border border-[#36271D]"
+                className="text-xs shrink-0 border-theme bg-surface hover:bg-surface-subtle text-theme-primary"
               >
-                <Plus className="h-3.5 w-3.5 mr-1 text-sunset-orange" /> Add
+                <Plus className="h-3.5 w-3.5 mr-1 text-theme-accent" /> Add
               </Button>
             </div>
 
@@ -323,7 +321,7 @@ export function ScheduleInterviewModal({
                 {questions.map((q, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-2 rounded-lg bg-[#120B07] border border-[#36271D] text-xs text-stone-200"
+                    className="flex items-center justify-between p-2 rounded-lg bg-surface-subtle border border-theme text-xs text-theme-primary"
                   >
                     <span className="truncate pr-2">
                       {index + 1}. {q.questionText}
@@ -331,7 +329,7 @@ export function ScheduleInterviewModal({
                     <button
                       type="button"
                       onClick={() => handleRemoveQuestion(index)}
-                      className="text-stone-500 hover:text-rose-400"
+                      className="text-theme-muted hover:text-rose-500"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -343,12 +341,12 @@ export function ScheduleInterviewModal({
         </form>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#36271D] bg-[#120B07]">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-theme bg-surface-subtle">
           <Button
             type="button"
             variant="ghost"
             onClick={onClose}
-            className="text-xs text-stone-400 hover:text-sunset-cream"
+            className="text-xs text-theme-muted hover:text-theme-primary"
           >
             Cancel
           </Button>
@@ -356,7 +354,7 @@ export function ScheduleInterviewModal({
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting || isLoadingData}
-            className="text-xs gradient-sunset-btn font-semibold"
+            className="text-xs gradient-theme-btn font-semibold"
           >
             {isSubmitting ? 'Scheduling...' : 'Confirm Schedule'}
           </Button>

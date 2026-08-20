@@ -139,15 +139,15 @@ export default function AdminUsersPage() {
   const getRoleBadgeStyle = (role: string) => {
     switch (role) {
       case 'ADMIN':
-        return 'border-sunset-crimson/40 text-rose-400 bg-sunset-crimson/10';
+        return 'border-rose-500/40 text-rose-600 dark:text-rose-400 bg-rose-500/10';
       case 'COMPANY_ADMIN':
-        return 'border-sunset-orange/40 text-sunset-amber bg-sunset-orange/10';
+        return 'border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10';
       case 'RECRUITER':
-        return 'border-blue-500/40 text-blue-400 bg-blue-500/10';
+        return 'border-blue-500/40 text-blue-600 dark:text-blue-400 bg-blue-500/10';
       case 'INTERVIEWER':
-        return 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10';
+        return 'border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10';
       default:
-        return 'border-stone-700 text-stone-400 bg-stone-900';
+        return 'border-theme text-theme-muted bg-surface-subtle';
     }
   };
 
@@ -156,13 +156,13 @@ export default function AdminUsersPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-sunset-cream flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sunset-orange to-sunset-crimson flex items-center justify-center shadow-md shadow-sunset-orange/20">
-              <Shield className="h-4 w-4 text-sunset-cream" />
+          <h1 className="text-2xl font-bold tracking-tight text-theme-primary flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-theme-accent flex items-center justify-center text-white shadow-md shadow-black/10">
+              <Shield className="h-4 w-4" />
             </div>
-            User Access & Permissions
+            User Access & Permissions Governance
           </h1>
-          <p className="text-sm text-stone-400 mt-1">
+          <p className="text-sm text-theme-muted mt-1">
             Manage system administrators, company recruiters, interviewers, and account statuses.
           </p>
         </div>
@@ -173,9 +173,9 @@ export default function AdminUsersPage() {
             size="sm"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="border-[#36271D] bg-[#18110C] text-stone-300 hover:text-sunset-cream"
+            className="border-theme bg-card text-theme-primary hover:bg-surface-subtle"
           >
-            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? 'animate-spin text-sunset-orange' : 'text-sunset-amber'}`} />
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? 'animate-spin text-theme-accent' : 'text-theme-muted'}`} />
             Refresh
           </Button>
 
@@ -194,7 +194,7 @@ export default function AdminUsersPage() {
               });
               setIsModalOpen(true);
             }}
-            className="gradient-sunset-btn text-xs font-semibold gap-1.5"
+            className="gradient-theme-btn text-xs font-semibold gap-1.5"
           >
             <Plus className="h-4 w-4" /> Add User
           </Button>
@@ -202,21 +202,21 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Filter Bar */}
-      <div className="p-4 rounded-xl bg-[#18110C] border border-[#36271D] flex flex-wrap items-center gap-3">
+      <div className="p-4 rounded-xl bg-card border border-theme shadow-sm flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[240px]">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-stone-500" />
+          <Search className="absolute left-3 top-3 h-4 w-4 text-theme-muted" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search users by name or email..."
-            className="pl-9 bg-[#120B07] border-[#36271D] text-sunset-cream"
+            className="pl-9 bg-surface border-theme text-theme-primary text-xs"
           />
         </div>
 
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
-          className="rounded-lg bg-[#120B07] border border-[#36271D] px-3 py-2 text-xs text-sunset-cream focus:outline-none focus:ring-1 focus:ring-sunset-orange"
+          className="rounded-lg bg-surface border border-theme px-3 py-2 text-xs text-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-accent"
         >
           <option value="">All Roles</option>
           <option value="ADMIN">Super Admin</option>
@@ -230,19 +230,19 @@ export default function AdminUsersPage() {
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4].map((n) => (
-            <Skeleton key={n} className="h-16 rounded-xl" />
+            <Skeleton key={n} className="h-16 rounded-xl bg-surface-subtle" />
           ))}
         </div>
       ) : users.length === 0 ? (
-        <div className="p-12 text-center rounded-2xl bg-[#18110C] border border-[#36271D] space-y-3">
-          <Users className="h-10 w-10 text-stone-600 mx-auto" />
-          <h3 className="text-sm font-semibold text-sunset-cream">No users found</h3>
-          <p className="text-xs text-stone-400">Try changing your filters or add a new team member.</p>
+        <div className="p-12 text-center rounded-2xl bg-card border border-theme space-y-3 shadow-sm">
+          <Users className="h-10 w-10 text-theme-muted mx-auto opacity-50" />
+          <h3 className="text-sm font-semibold text-theme-primary">No users found</h3>
+          <p className="text-xs text-theme-muted">Try changing your filters or add a new team member.</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-[#36271D] bg-[#18110C]">
-          <table className="w-full text-left text-xs text-stone-300">
-            <thead className="border-b border-[#36271D] bg-[#120B07] text-[11px] font-semibold uppercase tracking-wider text-stone-400 font-mono">
+        <div className="overflow-hidden rounded-xl border border-theme bg-card shadow-sm">
+          <table className="w-full text-left text-xs text-theme-primary">
+            <thead className="border-b border-theme bg-surface-subtle text-[11px] font-semibold uppercase tracking-wider text-theme-muted font-mono">
               <tr>
                 <th className="px-5 py-3.5">User</th>
                 <th className="px-5 py-3.5">Role</th>
@@ -252,20 +252,20 @@ export default function AdminUsersPage() {
                 <th className="px-5 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#36271D]/60">
+            <tbody className="divide-y divide-theme">
               {users.map((u) => (
-                <tr key={u.id} className="hover:bg-[#20150F] transition-colors">
+                <tr key={u.id} className="hover:bg-surface-subtle transition-colors">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-sunset-orange/20 border border-sunset-orange/30 text-sunset-amber flex items-center justify-center font-bold text-xs">
+                      <div className="w-8 h-8 rounded-full bg-theme-accent/15 border border-theme-accent/30 text-theme-accent flex items-center justify-center font-bold text-xs font-mono">
                         {u.firstName[0]}
                         {u.lastName[0]}
                       </div>
                       <div>
-                        <p className="font-semibold text-sunset-cream text-sm">
+                        <p className="font-semibold text-theme-primary text-sm">
                           {u.firstName} {u.lastName}
                         </p>
-                        <p className="text-[11px] text-stone-500 font-mono">{u.email}</p>
+                        <p className="text-[11px] text-theme-muted font-mono">{u.email}</p>
                       </div>
                     </div>
                   </td>
@@ -277,15 +277,15 @@ export default function AdminUsersPage() {
                   </td>
 
                   <td className="px-5 py-4">
-                    <span className="text-stone-300 font-medium">
+                    <span className="text-theme-primary font-medium">
                       {u.company?.name || (u.role === 'ADMIN' ? 'System (Global)' : 'Unassigned')}
                     </span>
                   </td>
 
-                  <td className="px-5 py-4 font-mono text-[11px] text-stone-400">
+                  <td className="px-5 py-4 font-mono text-[11px] text-theme-muted">
                     <div>{new Date(u.createdAt).toLocaleDateString()}</div>
                     {u.lastLoginAt && (
-                      <div className="text-stone-500 text-[10px]">
+                      <div className="text-theme-muted text-[10px]">
                         Last: {new Date(u.lastLoginAt).toLocaleDateString()}
                       </div>
                     )}
@@ -295,8 +295,8 @@ export default function AdminUsersPage() {
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
                         u.isActive
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                          : 'bg-stone-800 text-stone-500'
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                          : 'bg-surface-subtle text-theme-muted'
                       }`}
                     >
                       {u.isActive ? 'Active' : 'Inactive'}
@@ -309,7 +309,7 @@ export default function AdminUsersPage() {
                         size="sm"
                         variant="ghost"
                         onClick={() => handleOpenEdit(u)}
-                        className="h-7 w-7 p-0 text-stone-400 hover:text-sunset-cream hover:bg-[#251A13]"
+                        className="h-7 w-7 p-0 text-theme-muted hover:text-theme-primary hover:bg-surface-subtle"
                       >
                         <Edit2 className="h-3.5 w-3.5" />
                       </Button>
@@ -321,7 +321,7 @@ export default function AdminUsersPage() {
                             deleteMutation.mutate(u.id);
                           }
                         }}
-                        className="h-7 w-7 p-0 text-rose-400/80 hover:text-rose-400 hover:bg-rose-500/10"
+                        className="h-7 w-7 p-0 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -336,16 +336,16 @@ export default function AdminUsersPage() {
 
       {/* User Create/Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="w-full max-w-lg bg-[#18110C] border border-[#36271D] rounded-2xl shadow-2xl overflow-hidden">
-            <div className="p-6 border-b border-[#36271D] flex items-center justify-between bg-[#120B07]">
-              <h2 className="text-base font-bold text-sunset-cream flex items-center gap-2">
-                <Shield className="h-5 w-5 text-sunset-orange" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="w-full max-w-lg bg-card border border-theme rounded-2xl shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-theme flex items-center justify-between bg-surface-subtle">
+              <h2 className="text-base font-bold text-theme-primary flex items-center gap-2">
+                <Shield className="h-5 w-5 text-theme-accent" />
                 {editingUser ? 'Edit User Account' : 'Add New User'}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-lg text-stone-400 hover:text-sunset-cream hover:bg-[#251A13]"
+                className="p-1 rounded-lg text-theme-muted hover:text-theme-primary hover:bg-surface"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -354,39 +354,39 @@ export default function AdminUsersPage() {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-sunset-cream">First Name *</label>
+                  <label className="text-xs font-semibold text-theme-primary">First Name *</label>
                   <Input
                     required
                     value={form.firstName}
                     onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                    className="bg-[#120B07] border-[#36271D] text-sunset-cream"
+                    className="bg-surface border-theme text-theme-primary text-xs"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-sunset-cream">Last Name *</label>
+                  <label className="text-xs font-semibold text-theme-primary">Last Name *</label>
                   <Input
                     required
                     value={form.lastName}
                     onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                    className="bg-[#120B07] border-[#36271D] text-sunset-cream"
+                    className="bg-surface border-theme text-theme-primary text-xs"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-sunset-cream">Email Address *</label>
+                <label className="text-xs font-semibold text-theme-primary">Email Address *</label>
                 <Input
                   type="email"
                   required
                   disabled={!!editingUser}
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="bg-[#120B07] border-[#36271D] text-sunset-cream disabled:opacity-60"
+                  className="bg-surface border-theme text-theme-primary text-xs disabled:opacity-60"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-sunset-cream">
+                <label className="text-xs font-semibold text-theme-primary">
                   {editingUser ? 'New Password (leave blank to keep current)' : 'Password *'}
                 </label>
                 <Input
@@ -395,17 +395,17 @@ export default function AdminUsersPage() {
                   placeholder={editingUser ? '••••••••' : 'Min 8 characters'}
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="bg-[#120B07] border-[#36271D] text-sunset-cream"
+                  className="bg-surface border-theme text-theme-primary text-xs"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-sunset-cream">Role *</label>
+                  <label className="text-xs font-semibold text-theme-primary">Role *</label>
                   <select
                     value={form.role}
                     onChange={(e) => setForm({ ...form, role: e.target.value })}
-                    className="w-full rounded-lg bg-[#120B07] border border-[#36271D] p-2 text-xs text-sunset-cream focus:outline-none focus:ring-1 focus:ring-sunset-orange"
+                    className="w-full rounded-lg bg-surface border border-theme p-2 text-xs text-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-accent"
                   >
                     <option value="RECRUITER">Recruiter</option>
                     <option value="INTERVIEWER">Interviewer</option>
@@ -415,11 +415,11 @@ export default function AdminUsersPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-sunset-cream">Company</label>
+                  <label className="text-xs font-semibold text-theme-primary">Company</label>
                   <select
                     value={form.companyId}
                     onChange={(e) => setForm({ ...form, companyId: e.target.value })}
-                    className="w-full rounded-lg bg-[#120B07] border border-[#36271D] p-2 text-xs text-sunset-cream focus:outline-none focus:ring-1 focus:ring-sunset-orange"
+                    className="w-full rounded-lg bg-surface border border-theme p-2 text-xs text-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-accent"
                   >
                     <option value="">No specific company</option>
                     {companies.map((c) => (
@@ -432,27 +432,27 @@ export default function AdminUsersPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-sunset-cream">Phone Number (Optional)</label>
+                <label className="text-xs font-semibold text-theme-primary">Phone Number (Optional)</label>
                 <Input
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  className="bg-[#120B07] border-[#36271D] text-sunset-cream"
+                  className="bg-surface border-theme text-theme-primary text-xs"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#36271D]">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-theme">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setIsModalOpen(false)}
-                  className="border-[#36271D] text-stone-400 hover:text-sunset-cream"
+                  className="border-theme text-theme-muted hover:text-theme-primary"
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
                   disabled={createMutation.isPending || updateMutation.isPending}
-                  className="gradient-sunset-btn font-semibold"
+                  className="gradient-theme-btn font-semibold text-xs"
                 >
                   {createMutation.isPending || updateMutation.isPending
                     ? 'Saving…'

@@ -76,22 +76,22 @@ export function AddCandidateModal({ isOpen, onClose, onSuccess }: AddCandidateMo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-[#18110C] border border-[#36271D] rounded-2xl w-full max-w-xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in">
+      <div className="bg-card border border-theme rounded-2xl w-full max-w-xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#36271D] bg-[#120B07]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-theme bg-surface-subtle">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sunset-orange to-sunset-crimson flex items-center justify-center text-sunset-cream shadow-md shadow-sunset-orange/20">
+            <div className="w-8 h-8 rounded-lg bg-theme-accent flex items-center justify-center text-white shadow-md shadow-black/10">
               <UserPlus className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-sunset-cream">Add New Candidate</h2>
-              <p className="text-xs text-stone-400">Create a candidate profile for technical interview rounds</p>
+              <h2 className="text-base font-bold text-theme-primary">Add New Candidate</h2>
+              <p className="text-xs text-theme-muted">Create a candidate profile for technical interview rounds</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-stone-400 hover:text-sunset-cream hover:bg-[#251A13] transition-colors"
+            className="p-1 rounded-lg text-theme-muted hover:text-theme-primary hover:bg-surface transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -100,7 +100,7 @@ export function AddCandidateModal({ isOpen, onClose, onSuccess }: AddCandidateMo
         {/* Modal Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
           {errorMessage && (
-            <div className="p-3 rounded-xl bg-sunset-crimson/15 border border-sunset-crimson/30 text-rose-300 text-xs flex items-start gap-2.5">
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs flex items-start gap-2.5">
               <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
               <div className="leading-relaxed">{errorMessage}</div>
             </div>
@@ -109,23 +109,23 @@ export function AddCandidateModal({ isOpen, onClose, onSuccess }: AddCandidateMo
           {/* Row 1: Name */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-stone-300">First Name *</Label>
+              <Label className="text-xs font-semibold text-theme-primary">First Name *</Label>
               <Input
                 required
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="e.g. Maya"
-                className="bg-[#120B07] border-[#36271D] text-sunset-cream text-xs focus-visible:ring-sunset-orange"
+                className="bg-surface border-theme text-theme-primary text-xs focus-visible:ring-theme-accent"
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-stone-300">Last Name *</Label>
+              <Label className="text-xs font-semibold text-theme-primary">Last Name *</Label>
               <Input
                 required
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="e.g. Lin"
-                className="bg-[#120B07] border-[#36271D] text-sunset-cream text-xs focus-visible:ring-sunset-orange"
+                className="bg-surface border-theme text-theme-primary text-xs focus-visible:ring-theme-accent"
               />
             </div>
           </div>
@@ -133,22 +133,22 @@ export function AddCandidateModal({ isOpen, onClose, onSuccess }: AddCandidateMo
           {/* Row 2: Email & Phone */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-stone-300">Email Address</Label>
+              <Label className="text-xs font-semibold text-theme-primary">Email Address</Label>
               <Input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="maya.lin@example.com"
-                className="bg-[#120B07] border-[#36271D] text-sunset-cream text-xs focus-visible:ring-sunset-orange"
+                className="bg-surface border-theme text-theme-primary text-xs focus-visible:ring-theme-accent"
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-stone-300">Phone Number</Label>
+              <Label className="text-xs font-semibold text-theme-primary">Phone Number</Label>
               <Input
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+1 (555) 019-2834"
-                className="bg-[#120B07] border-[#36271D] text-sunset-cream text-xs focus-visible:ring-sunset-orange"
+                className="bg-surface border-theme text-theme-primary text-xs focus-visible:ring-theme-accent"
               />
             </div>
           </div>
@@ -156,23 +156,23 @@ export function AddCandidateModal({ isOpen, onClose, onSuccess }: AddCandidateMo
           {/* Row 3: Role & Experience */}
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2 space-y-1.5">
-              <Label className="text-xs font-semibold text-stone-300">Current Role / Target Title</Label>
+              <Label className="text-xs font-semibold text-theme-primary">Current Role / Target Title</Label>
               <Input
                 value={currentRole}
                 onChange={(e) => setCurrentRole(e.target.value)}
                 placeholder="Senior Full Stack Engineer"
-                className="bg-[#120B07] border-[#36271D] text-sunset-cream text-xs focus-visible:ring-sunset-orange"
+                className="bg-surface border-theme text-theme-primary text-xs focus-visible:ring-theme-accent"
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-stone-300">Experience (Years)</Label>
+              <Label className="text-xs font-semibold text-theme-primary">Experience (Years)</Label>
               <Input
                 type="number"
                 min={0}
                 max={50}
                 value={experienceYears}
                 onChange={(e) => setExperienceYears(parseInt(e.target.value, 10) || 0)}
-                className="bg-[#120B07] border-[#36271D] text-sunset-cream text-xs font-mono focus-visible:ring-sunset-orange"
+                className="bg-surface border-theme text-theme-primary text-xs font-mono focus-visible:ring-theme-accent"
               />
             </div>
           </div>
@@ -180,28 +180,28 @@ export function AddCandidateModal({ isOpen, onClose, onSuccess }: AddCandidateMo
           {/* Row 4: Location & LinkedIn */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-stone-300">Location (City/Country)</Label>
+              <Label className="text-xs font-semibold text-theme-primary">Location (City/Country)</Label>
               <Input
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 placeholder="San Francisco, CA or Remote"
-                className="bg-[#120B07] border-[#36271D] text-sunset-cream text-xs focus-visible:ring-sunset-orange"
+                className="bg-surface border-theme text-theme-primary text-xs focus-visible:ring-theme-accent"
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-stone-300">LinkedIn URL</Label>
+              <Label className="text-xs font-semibold text-theme-primary">LinkedIn URL</Label>
               <Input
                 value={linkedinUrl}
                 onChange={(e) => setLinkedinUrl(e.target.value)}
                 placeholder="https://linkedin.com/in/..."
-                className="bg-[#120B07] border-[#36271D] text-sunset-cream text-xs focus-visible:ring-sunset-orange"
+                className="bg-surface border-theme text-theme-primary text-xs focus-visible:ring-theme-accent"
               />
             </div>
           </div>
 
           {/* Skills Tag Management */}
-          <div className="space-y-2 pt-2 border-t border-[#36271D]">
-            <Label className="text-xs font-semibold text-stone-300">Technical Skills & Technologies</Label>
+          <div className="space-y-2 pt-2 border-t border-theme">
+            <Label className="text-xs font-semibold text-theme-primary">Technical Skills & Technologies</Label>
             <div className="flex gap-2">
               <Input
                 placeholder="Add a skill (e.g. Next.js, Kafka, PostgreSQL)"
@@ -213,16 +213,16 @@ export function AddCandidateModal({ isOpen, onClose, onSuccess }: AddCandidateMo
                     handleAddSkill();
                   }
                 }}
-                className="bg-[#120B07] border-[#36271D] text-xs text-sunset-cream"
+                className="bg-surface border-theme text-xs text-theme-primary"
               />
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 onClick={handleAddSkill}
-                className="text-xs shrink-0 bg-[#251A13] hover:bg-[#332219] text-sunset-cream border border-[#36271D]"
+                className="text-xs shrink-0 border-theme bg-surface hover:bg-surface-subtle text-theme-primary"
               >
-                <Plus className="h-3.5 w-3.5 mr-1 text-sunset-orange" /> Add
+                <Plus className="h-3.5 w-3.5 mr-1 text-theme-accent" /> Add
               </Button>
             </div>
 
@@ -230,13 +230,13 @@ export function AddCandidateModal({ isOpen, onClose, onSuccess }: AddCandidateMo
               {skills.map((skill) => (
                 <span
                   key={skill}
-                  className="inline-flex items-center gap-1 text-xs bg-[#251A13] text-sunset-cream border border-[#3D2D22] px-2.5 py-0.5 rounded-full"
+                  className="inline-flex items-center gap-1 text-xs bg-surface-subtle text-theme-primary border border-theme px-2.5 py-0.5 rounded-full"
                 >
                   {skill}
                   <button
                     type="button"
                     onClick={() => handleRemoveSkill(skill)}
-                    className="text-stone-400 hover:text-rose-400 ml-0.5"
+                    className="text-theme-muted hover:text-rose-500 ml-0.5"
                   >
                     ×
                   </button>
@@ -247,12 +247,12 @@ export function AddCandidateModal({ isOpen, onClose, onSuccess }: AddCandidateMo
         </form>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#36271D] bg-[#120B07]">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-theme bg-surface-subtle">
           <Button
             type="button"
             variant="ghost"
             onClick={onClose}
-            className="text-xs text-stone-400 hover:text-sunset-cream"
+            className="text-xs text-theme-muted hover:text-theme-primary"
           >
             Cancel
           </Button>
@@ -260,7 +260,7 @@ export function AddCandidateModal({ isOpen, onClose, onSuccess }: AddCandidateMo
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="text-xs gradient-sunset-btn font-semibold"
+            className="text-xs gradient-theme-btn font-semibold"
           >
             {isSubmitting ? 'Creating Profile...' : 'Create Candidate'}
           </Button>

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCurrentUser } from '@/hooks/use-auth';
+import { useThemeStore } from '@/stores/theme.store';
 
 interface NavItem {
   href: string;
@@ -28,6 +29,7 @@ interface NavItem {
 export function Sidebar() {
   const pathname = usePathname();
   const user = useCurrentUser();
+  const { theme } = useThemeStore();
 
   const role = user?.role?.toUpperCase();
   const isAdmin = role === 'ADMIN';
@@ -93,19 +95,19 @@ export function Sidebar() {
             className={cn(
               'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all',
               isActive
-                ? 'bg-gradient-to-r from-sunset-orange/20 via-sunset-amber/10 to-transparent text-sunset-cream border-l-2 border-sunset-orange font-semibold shadow-inner'
-                : 'text-stone-400 hover:text-sunset-cream hover:bg-[#231711]',
+                ? 'bg-theme-accent/20 text-white font-semibold border-l-2 border-theme-accent shadow-inner'
+                : 'text-stone-300/80 hover:text-white hover:bg-white/5',
             )}
           >
             <item.icon
               className={cn(
                 'h-4 w-4 flex-shrink-0',
-                isActive ? 'text-sunset-orange' : 'text-stone-400',
+                isActive ? 'text-theme-accent brightness-125' : 'text-stone-400',
               )}
             />
             <span>{item.label}</span>
             {item.badge && (
-              <span className="ml-auto text-xs bg-gradient-to-r from-sunset-orange to-sunset-crimson text-sunset-cream px-1.5 py-0.5 rounded-full font-bold">
+              <span className="ml-auto text-xs bg-theme-accent text-white px-1.5 py-0.5 rounded-full font-bold">
                 {item.badge}
               </span>
             )}
@@ -116,19 +118,19 @@ export function Sidebar() {
   );
 
   return (
-    <aside className="flex flex-col w-60 min-h-screen bg-[#150E0A] border-r border-[#36271D] py-4 select-none">
+    <aside className="flex flex-col w-60 min-h-screen bg-sidebar border-r border-theme py-4 select-none text-white">
       {/* Logo */}
       <div className="px-4 mb-6">
         <Link href="/dashboard" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sunset-orange to-sunset-crimson flex items-center justify-center flex-shrink-0 shadow-md shadow-sunset-orange/20">
-            <span className="text-sunset-cream font-bold text-sm">IP</span>
+          <div className="w-8 h-8 rounded-lg bg-theme-accent flex items-center justify-center flex-shrink-0 shadow-md shadow-black/30">
+            <span className="text-white font-bold text-sm">IP</span>
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-sunset-cream text-sm group-hover:text-sunset-amber transition-colors">
+            <span className="font-bold text-white text-sm group-hover:opacity-90 transition-opacity">
               InterviewOS
             </span>
-            <span className="text-[10px] text-sunset-amber/70 font-mono -mt-0.5">
-              Obsidian Sunset
+            <span className="text-[10px] text-stone-400 font-mono -mt-0.5 capitalize">
+              {theme.replace('-', ' ')}
             </span>
           </div>
         </Link>
@@ -138,7 +140,7 @@ export function Sidebar() {
       <nav className="flex-1 px-2 space-y-6 overflow-y-auto">
         {/* Main Section */}
         <div>
-          <p className="px-3 mb-1 text-[10px] font-bold uppercase tracking-wider text-stone-500 font-mono">
+          <p className="px-3 mb-1 text-[10px] font-bold uppercase tracking-wider text-stone-400 font-mono">
             Navigation
           </p>
           {renderNavGroup(mainNavItems)}
@@ -148,10 +150,10 @@ export function Sidebar() {
         {adminNavItems.length > 0 && (
           <div>
             <div className="px-3 mb-1 flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-sunset-orange/90 font-mono flex items-center gap-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-theme-accent font-mono flex items-center gap-1">
                 <Lock className="h-2.5 w-2.5" /> Administration
               </span>
-              <span className="text-[9px] px-1 rounded bg-sunset-orange/20 text-sunset-amber font-mono font-bold">
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-theme-accent/20 text-white font-mono font-bold">
                 ADMIN
               </span>
             </div>
@@ -161,7 +163,7 @@ export function Sidebar() {
 
         {/* Settings */}
         <div>
-          <p className="px-3 mb-1 text-[10px] font-bold uppercase tracking-wider text-stone-500 font-mono">
+          <p className="px-3 mb-1 text-[10px] font-bold uppercase tracking-wider text-stone-400 font-mono">
             System
           </p>
           {renderNavGroup([
@@ -172,19 +174,19 @@ export function Sidebar() {
 
       {/* User profile footer */}
       {user && (
-        <div className="px-4 pt-4 border-t border-[#36271D] mt-2">
+        <div className="px-4 pt-4 border-t border-white/10 mt-2">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-sunset-orange/20 border border-sunset-orange/40 flex items-center justify-center flex-shrink-0">
-              <span className="text-sunset-amber font-semibold text-xs">
+            <div className="w-8 h-8 rounded-full bg-theme-accent/20 border border-theme-accent/40 flex items-center justify-center flex-shrink-0">
+              <span className="text-white font-semibold text-xs">
                 {user.firstName[0]}
                 {user.lastName[0]}
               </span>
             </div>
             <div className="min-w-0">
-              <p className="text-sunset-cream text-sm font-medium truncate">
+              <p className="text-white text-sm font-medium truncate">
                 {user.firstName} {user.lastName}
               </p>
-              <p className="text-sunset-amber/70 text-[11px] truncate capitalize font-mono">
+              <p className="text-stone-400 text-[11px] truncate capitalize font-mono">
                 {user.role.toLowerCase().replace('_', ' ')}
               </p>
             </div>

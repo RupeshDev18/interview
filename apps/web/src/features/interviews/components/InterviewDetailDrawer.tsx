@@ -12,7 +12,6 @@ import {
   PlayCircle,
   XCircle,
   Copy,
-  ExternalLink,
   Plus,
   Save,
   Check,
@@ -52,7 +51,7 @@ export function InterviewDetailDrawer({
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('notes');
 
-  // Notes state & autosave
+  // Real-time live notes with autosave
   const [notes, setNotes] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -181,24 +180,24 @@ export function InterviewDetailDrawer({
   if (!interviewId) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/80 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-3xl bg-[#18110C] border-l border-[#36271D] h-full flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-sm animate-in fade-in">
+      <div className="w-full max-w-3xl bg-card border-l border-theme h-full flex flex-col shadow-2xl overflow-hidden">
         {/* Drawer Top Header */}
-        <div className="px-6 py-4 border-b border-[#36271D] bg-[#120B07] flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-theme bg-surface-subtle flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sunset-orange to-sunset-crimson flex items-center justify-center text-sunset-cream font-bold text-sm shadow-md shadow-sunset-orange/20">
+            <div className="w-10 h-10 rounded-xl bg-theme-accent flex items-center justify-center text-white font-bold text-sm shadow-md shadow-black/10">
               R{interview?.roundNumber || 1}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-sunset-cream">
+                <h2 className="text-base font-bold text-theme-primary">
                   {interview?.candidate.firstName} {interview?.candidate.lastName}
                 </h2>
-                <Badge variant="outline" className="text-xs text-sunset-amber border-sunset-amber/40 bg-sunset-amber/10">
+                <Badge variant="outline" className="text-xs text-theme-accent border-theme bg-surface-subtle font-mono">
                   {interview?.interviewType.name}
                 </Badge>
               </div>
-              <p className="text-xs text-stone-400 mt-0.5 font-mono">
+              <p className="text-xs text-theme-muted mt-0.5 font-mono">
                 {interview && format(new Date(interview.scheduledStart), 'EEEE, MMMM d, yyyy • h:mm a')}
               </p>
             </div>
@@ -207,7 +206,7 @@ export function InterviewDetailDrawer({
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="p-2 rounded-lg text-stone-400 hover:text-sunset-cream hover:bg-[#251A13] transition-colors"
+              className="p-2 rounded-lg text-theme-muted hover:text-theme-primary hover:bg-surface transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
@@ -215,10 +214,10 @@ export function InterviewDetailDrawer({
         </div>
 
         {/* Action / Status Bar */}
-        <div className="px-6 py-2.5 bg-[#140E0A] border-b border-[#36271D] flex items-center justify-between flex-wrap gap-2 text-xs">
+        <div className="px-6 py-2.5 bg-surface border-b border-theme flex items-center justify-between flex-wrap gap-2 text-xs">
           <div className="flex items-center gap-2">
-            <span className="text-stone-400 font-medium">Status:</span>
-            <span className="px-2.5 py-0.5 rounded-full font-medium bg-[#231711] text-sunset-cream border border-[#3D2D22]">
+            <span className="text-theme-muted font-medium">Status:</span>
+            <span className="px-2.5 py-0.5 rounded-full font-medium bg-surface-subtle text-theme-primary border border-theme font-mono">
               {interview?.status}
             </span>
 
@@ -228,7 +227,7 @@ export function InterviewDetailDrawer({
                 variant="ghost"
                 onClick={() => handleStatusChange('IN_PROGRESS' as InterviewStatus)}
                 disabled={isUpdatingStatus}
-                className="h-7 text-xs text-sunset-orange hover:bg-sunset-orange/10 font-semibold"
+                className="h-7 text-xs text-theme-accent hover:bg-surface-subtle font-semibold"
               >
                 <PlayCircle className="h-3.5 w-3.5 mr-1" /> Start Interview
               </Button>
@@ -240,7 +239,7 @@ export function InterviewDetailDrawer({
                 variant="ghost"
                 onClick={() => handleStatusChange('COMPLETED' as InterviewStatus)}
                 disabled={isUpdatingStatus}
-                className="h-7 text-xs text-emerald-400 hover:bg-emerald-500/10 font-semibold"
+                className="h-7 text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-semibold"
               >
                 <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Finish Interview
               </Button>
@@ -252,9 +251,9 @@ export function InterviewDetailDrawer({
               size="sm"
               variant="outline"
               onClick={handleCopyMeetingLink}
-              className="h-7 text-xs border-[#3D2D22] text-stone-300 hover:text-sunset-cream bg-[#231711]"
+              className="h-7 text-xs border-theme text-theme-primary hover:bg-surface-subtle bg-surface"
             >
-              {copiedLink ? <Check className="h-3.5 w-3.5 text-emerald-400 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1 text-sunset-amber" />}
+              {copiedLink ? <Check className="h-3.5 w-3.5 text-emerald-500 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1 text-theme-accent" />}
               {copiedLink ? 'Link Copied' : 'Copy Room Link'}
             </Button>
 
@@ -263,9 +262,9 @@ export function InterviewDetailDrawer({
               variant="outline"
               onClick={handleCopyCandidateLink}
               disabled={candidateLinkBusy}
-              className="h-7 text-xs border-[#3D2D22] text-stone-300 hover:text-sunset-cream bg-[#231711]"
+              className="h-7 text-xs border-theme text-theme-primary hover:bg-surface-subtle bg-surface"
             >
-              {candidateLinkCopied ? <Check className="h-3.5 w-3.5 text-emerald-400 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1 text-sunset-amber" />}
+              {candidateLinkCopied ? <Check className="h-3.5 w-3.5 text-emerald-500 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1 text-theme-accent" />}
               {candidateLinkCopied ? 'Candidate Link Copied' : candidateLinkBusy ? 'Generating…' : 'Copy Candidate Link'}
             </Button>
 
@@ -273,7 +272,7 @@ export function InterviewDetailDrawer({
               <Button
                 size="sm"
                 onClick={() => onOpenFeedback(interview)}
-                className="h-7 text-xs gradient-sunset-btn font-semibold"
+                className="h-7 text-xs gradient-theme-btn font-semibold"
               >
                 <Award className="h-3.5 w-3.5 mr-1" />
                 {interview.feedback ? 'Edit Scorecard' : 'Submit Scorecard'}
@@ -283,7 +282,7 @@ export function InterviewDetailDrawer({
         </div>
 
         {/* Tabs Bar */}
-        <div className="flex border-b border-[#36271D] bg-[#120B07] px-6">
+        <div className="flex border-b border-theme bg-surface-subtle px-6">
           {[
             { key: 'notes', label: 'Live Notes', icon: FileText },
             { key: 'questions', label: `Questions (${questions.length})`, icon: FileSpreadsheet },
@@ -297,8 +296,8 @@ export function InterviewDetailDrawer({
                 onClick={() => setActiveTab(tab.key as TabType)}
                 className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all ${
                   isActive
-                    ? 'border-sunset-orange text-sunset-amber bg-sunset-orange/5'
-                    : 'border-transparent text-stone-400 hover:text-sunset-cream hover:bg-[#231711]'
+                    ? 'border-theme-accent text-theme-accent bg-surface'
+                    : 'border-transparent text-theme-muted hover:text-theme-primary hover:bg-surface/50'
                 }`}
               >
                 <tab.icon className="h-4 w-4" />
@@ -315,24 +314,24 @@ export function InterviewDetailDrawer({
             <div className="flex flex-col h-full space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="font-semibold text-sunset-cream">Interviewer Live Scratchpad</span>
-                  <span className="text-stone-500 font-mono">• Autosaved in real-time</span>
+                  <span className="font-semibold text-theme-primary">Interviewer Live Scratchpad</span>
+                  <span className="text-theme-muted font-mono">• Autosaved in real-time</span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   {saveStatus === 'saving' && (
-                    <span className="text-[11px] text-sunset-amber flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-sunset-orange animate-pulse" />
+                    <span className="text-[11px] text-theme-accent flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-theme-accent animate-pulse" />
                       Saving...
                     </span>
                   )}
                   {saveStatus === 'saved' && (
-                    <span className="text-[11px] text-emerald-400 flex items-center gap-1">
+                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                       <Check className="h-3 w-3" /> All changes saved
                     </span>
                   )}
                   {saveStatus === 'error' && (
-                    <span className="text-[11px] text-rose-400 flex items-center gap-1">
+                    <span className="text-[11px] text-rose-500 flex items-center gap-1">
                       <AlertCircle className="h-3 w-3" /> Save failed
                     </span>
                   )}
@@ -341,9 +340,9 @@ export function InterviewDetailDrawer({
                     size="sm"
                     variant="outline"
                     onClick={handleManualSaveNotes}
-                    className="h-7 text-xs border-[#36271D] text-stone-300 hover:text-sunset-cream bg-[#231711]"
+                    className="h-7 text-xs border-theme text-theme-primary hover:bg-surface-subtle bg-surface"
                   >
-                    <Save className="h-3 w-3 mr-1 text-sunset-amber" /> Save
+                    <Save className="h-3 w-3 mr-1 text-theme-accent" /> Save
                   </Button>
                 </div>
               </div>
@@ -352,7 +351,7 @@ export function InterviewDetailDrawer({
                 value={notes}
                 onChange={(e) => handleNotesChange(e.target.value)}
                 placeholder="Type your real-time notes here during the interview... (e.g. key observations, algorithm approach, code syntax, behavioral responses, edge cases discussed)"
-                className="w-full flex-1 min-h-[350px] p-4 rounded-xl bg-[#120B07] border border-[#36271D] text-sunset-cream text-sm placeholder:text-stone-600 focus:outline-none focus:ring-1 focus:ring-sunset-orange font-mono leading-relaxed resize-none shadow-inner"
+                className="w-full flex-1 min-h-[350px] p-4 rounded-xl bg-surface border border-theme text-theme-primary text-sm placeholder:text-theme-muted focus:outline-none focus:ring-1 focus:ring-theme-accent font-mono leading-relaxed resize-none shadow-inner"
               />
             </div>
           )}
@@ -362,35 +361,35 @@ export function InterviewDetailDrawer({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-sunset-cream">
+                  <h3 className="text-sm font-semibold text-theme-primary">
                     Interview Questions & Score Tracker
                   </h3>
-                  <p className="text-xs text-stone-400">
+                  <p className="text-xs text-theme-muted">
                     Track answers, notes, and individual ratings for each technical question.
                   </p>
                 </div>
               </div>
 
               {questions.length === 0 ? (
-                <div className="p-8 text-center bg-[#120B07] rounded-xl border border-[#36271D]">
-                  <p className="text-xs text-stone-400">No questions attached to this interview.</p>
+                <div className="p-8 text-center bg-surface-subtle rounded-xl border border-theme">
+                  <p className="text-xs text-theme-muted">No questions attached to this interview.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {questions.map((q, index) => (
                     <div
                       key={q.id}
-                      className="p-4 rounded-xl bg-[#20150F] border border-[#36271D] space-y-3 shadow-md"
+                      className="p-4 rounded-xl bg-surface border border-theme space-y-3 shadow-sm"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-start gap-2">
-                          <span className="w-5 h-5 rounded-full bg-sunset-orange/20 border border-sunset-orange/30 text-sunset-amber flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 font-mono">
+                          <span className="w-5 h-5 rounded-full bg-theme-accent/15 border border-theme-accent/30 text-theme-accent flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 font-mono">
                             {index + 1}
                           </span>
                           <div>
-                            <p className="text-sm font-semibold text-sunset-cream">{q.questionText}</p>
+                            <p className="text-sm font-semibold text-theme-primary">{q.questionText}</p>
                             {q.category && (
-                              <span className="text-[10px] text-sunset-amber bg-sunset-orange/10 border border-sunset-orange/20 px-1.5 py-0.5 rounded font-mono mt-1 inline-block">
+                              <span className="text-[10px] text-theme-accent bg-surface-subtle border border-theme px-1.5 py-0.5 rounded font-mono mt-1 inline-block">
                                 {q.category}
                               </span>
                             )}
@@ -406,8 +405,8 @@ export function InterviewDetailDrawer({
                               onClick={() => handleUpdateQuestion(q.id, 'score', star)}
                               className={`p-1 rounded transition-colors ${
                                 (q.score || 0) >= star
-                                  ? 'text-sunset-amber'
-                                  : 'text-stone-700 hover:text-stone-500'
+                                  ? 'text-amber-400'
+                                  : 'text-stone-300 dark:text-stone-700 hover:text-stone-400'
                               }`}
                             >
                               <Star className="h-4 w-4 fill-current" />
@@ -417,15 +416,15 @@ export function InterviewDetailDrawer({
                       </div>
 
                       {q.expectedAnswer && (
-                        <div className="p-2.5 rounded-lg bg-sunset-orange/10 border border-sunset-orange/20 text-xs text-sunset-amber/90">
-                          <span className="font-bold text-sunset-amber">Expected Solution / Hint: </span>
+                        <div className="p-2.5 rounded-lg bg-surface-subtle border border-theme text-xs text-theme-primary">
+                          <span className="font-bold text-theme-accent">Expected Solution / Hint: </span>
                           {q.expectedAnswer}
                         </div>
                       )}
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                         <div className="space-y-1">
-                          <label className="text-[11px] font-medium text-stone-400">
+                          <label className="text-[11px] font-medium text-theme-muted">
                             Candidate's Response / Approach
                           </label>
                           <textarea
@@ -435,12 +434,12 @@ export function InterviewDetailDrawer({
                               handleUpdateQuestion(q.id, 'candidateAnswer', e.target.value)
                             }
                             placeholder="Summary of candidate's answer..."
-                            className="w-full p-2 rounded-lg bg-[#120B07] border border-[#36271D] text-xs text-sunset-cream focus:outline-none focus:ring-1 focus:ring-sunset-orange"
+                            className="w-full p-2 rounded-lg bg-surface border border-theme text-xs text-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-accent"
                           />
                         </div>
 
                         <div className="space-y-1">
-                          <label className="text-[11px] font-medium text-stone-400">
+                          <label className="text-[11px] font-medium text-theme-muted">
                             Interviewer Observation Notes
                           </label>
                           <textarea
@@ -450,7 +449,7 @@ export function InterviewDetailDrawer({
                               handleUpdateQuestion(q.id, 'interviewerNotes', e.target.value)
                             }
                             placeholder="Observations, hints needed, test cases missed..."
-                            className="w-full p-2 rounded-lg bg-[#120B07] border border-[#36271D] text-xs text-sunset-cream focus:outline-none focus:ring-1 focus:ring-sunset-orange"
+                            className="w-full p-2 rounded-lg bg-surface border border-theme text-xs text-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-accent"
                           />
                         </div>
                       </div>
@@ -466,23 +465,23 @@ export function InterviewDetailDrawer({
             <div className="space-y-5">
               {interview?.feedback ? (
                 <div className="space-y-5">
-                  <div className="p-5 rounded-2xl bg-[#20150F] border border-[#36271D] space-y-4 shadow-xl">
+                  <div className="p-5 rounded-2xl bg-surface border border-theme space-y-4 shadow-sm">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        <Award className="h-5 w-5 text-sunset-orange" />
-                        <h4 className="text-sm font-bold text-sunset-cream">Overall Recommendation</h4>
+                        <Award className="h-5 w-5 text-theme-accent" />
+                        <h4 className="text-sm font-bold text-theme-primary">Overall Recommendation</h4>
                       </div>
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-sunset-orange/20 text-sunset-amber border border-sunset-orange/40">
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-surface-subtle text-theme-accent border border-theme font-mono">
                         {interview.feedback.recommendation.replace('_', ' ')}
                       </span>
                     </div>
 
                     {interview.feedback.overallScore && (
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-stone-400">Overall Rating:</span>
+                        <span className="text-xs text-theme-muted">Overall Rating:</span>
                         <div className="flex items-center gap-1">
-                          <Star className="h-4 w-4 fill-sunset-amber text-sunset-amber" />
-                          <span className="text-sm font-bold text-sunset-cream font-mono">
+                          <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                          <span className="text-sm font-bold text-theme-primary font-mono">
                             {Number(interview.feedback.overallScore).toFixed(1)} / 5.0
                           </span>
                         </div>
@@ -492,20 +491,20 @@ export function InterviewDetailDrawer({
 
                   {/* Rubric Breakdown */}
                   {interview.feedback.scores && Object.keys(interview.feedback.scores).length > 0 && (
-                    <div className="p-4 rounded-xl bg-[#120B07] border border-[#36271D] space-y-3">
-                      <h4 className="text-xs font-semibold text-sunset-amber uppercase tracking-wider font-mono">
+                    <div className="p-4 rounded-xl bg-surface border border-theme space-y-3">
+                      <h4 className="text-xs font-semibold text-theme-accent uppercase tracking-wider font-mono">
                         Criteria Scores Breakdown
                       </h4>
                       <div className="grid grid-cols-2 gap-3">
                         {Object.entries(interview.feedback.scores).map(([key, val]) => (
                           <div
                             key={key}
-                            className="flex items-center justify-between p-2.5 rounded-lg bg-[#20150F] border border-[#36271D] text-xs"
+                            className="flex items-center justify-between p-2.5 rounded-lg bg-surface-subtle border border-theme text-xs"
                           >
-                            <span className="text-stone-300 capitalize">
+                            <span className="text-theme-primary capitalize">
                               {key.replace('_', ' ')}
                             </span>
-                            <span className="font-bold text-sunset-amber font-mono">{val} / 5</span>
+                            <span className="font-bold text-theme-accent font-mono">{val} / 5</span>
                           </div>
                         ))}
                       </div>
@@ -514,50 +513,50 @@ export function InterviewDetailDrawer({
 
                   {/* Qualitative summary */}
                   {interview.feedback.strengths && (
-                    <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-800/40 space-y-1.5">
-                      <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                    <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1.5">
+                      <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
                         <ThumbsUp className="h-3.5 w-3.5" /> Key Strengths
                       </span>
-                      <p className="text-xs text-stone-200 leading-relaxed whitespace-pre-wrap">
+                      <p className="text-xs text-theme-primary leading-relaxed whitespace-pre-wrap">
                         {interview.feedback.strengths}
                       </p>
                     </div>
                   )}
 
                   {interview.feedback.weaknesses && (
-                    <div className="p-4 rounded-xl bg-sunset-amber/10 border border-sunset-amber/30 space-y-1.5">
-                      <span className="text-xs font-semibold text-sunset-amber flex items-center gap-1.5">
+                    <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-1.5">
+                      <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
                         <ThumbsDown className="h-3.5 w-3.5" /> Areas for Improvement
                       </span>
-                      <p className="text-xs text-stone-200 leading-relaxed whitespace-pre-wrap">
+                      <p className="text-xs text-theme-primary leading-relaxed whitespace-pre-wrap">
                         {interview.feedback.weaknesses}
                       </p>
                     </div>
                   )}
 
                   {interview.feedback.concerns && (
-                    <div className="p-4 rounded-xl bg-sunset-crimson/15 border border-sunset-crimson/30 space-y-1.5">
-                      <span className="text-xs font-semibold text-rose-400 flex items-center gap-1.5">
+                    <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 space-y-1.5">
+                      <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
                         <AlertCircle className="h-3.5 w-3.5" /> Red Flags & Concerns
                       </span>
-                      <p className="text-xs text-stone-200 leading-relaxed whitespace-pre-wrap">
+                      <p className="text-xs text-theme-primary leading-relaxed whitespace-pre-wrap">
                         {interview.feedback.concerns}
                       </p>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="p-10 text-center bg-[#120B07] rounded-2xl border border-[#36271D] space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-sunset-orange/20 text-sunset-amber mx-auto flex items-center justify-center">
+                <div className="p-10 text-center bg-surface-subtle rounded-2xl border border-theme space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-surface text-theme-accent mx-auto flex items-center justify-center shadow-sm">
                     <Award className="h-6 w-6" />
                   </div>
-                  <h4 className="text-sm font-semibold text-sunset-cream">No Feedback Submitted Yet</h4>
-                  <p className="text-xs text-stone-400 max-w-sm mx-auto">
+                  <h4 className="text-sm font-semibold text-theme-primary">No Feedback Submitted Yet</h4>
+                  <p className="text-xs text-theme-muted max-w-sm mx-auto">
                     Evaluate this candidate against the technical rubric to provide hiring recommendations.
                   </p>
                   <Button
                     onClick={() => onOpenFeedback(interview!)}
-                    className="text-xs gradient-sunset-btn font-semibold mt-2"
+                    className="text-xs gradient-theme-btn font-semibold mt-2"
                   >
                     Open Feedback Form
                   </Button>
@@ -570,37 +569,37 @@ export function InterviewDetailDrawer({
           {activeTab === 'details' && (
             <div className="space-y-4">
               {/* Candidate Info */}
-              <div className="p-4 rounded-xl bg-[#20150F] border border-[#36271D] space-y-3">
-                <h4 className="text-xs font-semibold text-sunset-amber uppercase tracking-wider font-mono">
+              <div className="p-4 rounded-xl bg-surface border border-theme space-y-3">
+                <h4 className="text-xs font-semibold text-theme-accent uppercase tracking-wider font-mono">
                   Candidate Dossier
                 </h4>
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div>
-                    <span className="text-stone-500">Full Name:</span>
-                    <p className="font-semibold text-sunset-cream">
+                    <span className="text-theme-muted">Full Name:</span>
+                    <p className="font-semibold text-theme-primary">
                       {interview?.candidate.firstName} {interview?.candidate.lastName}
                     </p>
                   </div>
                   <div>
-                    <span className="text-stone-500">Email:</span>
-                    <p className="text-stone-200">{interview?.candidate.email || 'N/A'}</p>
+                    <span className="text-theme-muted">Email:</span>
+                    <p className="text-theme-primary">{interview?.candidate.email || 'N/A'}</p>
                   </div>
                   <div>
-                    <span className="text-stone-500">Current Role:</span>
-                    <p className="text-stone-200">{interview?.candidate.currentRole || 'N/A'}</p>
+                    <span className="text-theme-muted">Current Role:</span>
+                    <p className="text-theme-primary">{interview?.candidate.currentRole || 'N/A'}</p>
                   </div>
                   <div>
-                    <span className="text-stone-500">Experience:</span>
-                    <p className="text-stone-200">{interview?.candidate.experienceYears ? `${interview.candidate.experienceYears} years` : 'N/A'}</p>
+                    <span className="text-theme-muted">Experience:</span>
+                    <p className="text-theme-primary">{interview?.candidate.experienceYears ? `${interview.candidate.experienceYears} years` : 'N/A'}</p>
                   </div>
                 </div>
 
                 {interview?.candidate.skills && (
-                  <div className="pt-2 border-t border-[#36271D]">
-                    <span className="text-stone-500 text-[11px]">Skills:</span>
+                  <div className="pt-2 border-t border-theme">
+                    <span className="text-theme-muted text-[11px]">Skills:</span>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {interview.candidate.skills.map((s) => (
-                        <span key={s} className="px-2 py-0.5 rounded bg-[#2A1D16] border border-[#3D2D22] text-stone-300 text-[11px]">
+                        <span key={s} className="px-2 py-0.5 rounded bg-surface-subtle border border-theme text-theme-primary text-[11px]">
                           {s}
                         </span>
                       ))}
@@ -610,14 +609,14 @@ export function InterviewDetailDrawer({
               </div>
 
               {/* Interviewer Info */}
-              <div className="p-4 rounded-xl bg-[#20150F] border border-[#36271D] space-y-2 text-xs">
-                <h4 className="text-xs font-semibold text-sunset-amber uppercase tracking-wider font-mono">
+              <div className="p-4 rounded-xl bg-surface border border-theme space-y-2 text-xs">
+                <h4 className="text-xs font-semibold text-theme-accent uppercase tracking-wider font-mono">
                   Assigned Interviewer
                 </h4>
-                <p className="font-semibold text-sunset-cream">
+                <p className="font-semibold text-theme-primary">
                   {interview?.interviewer.user.firstName} {interview?.interviewer.user.lastName} ({interview?.interviewer.user.email})
                 </p>
-                <p className="text-stone-400 font-mono">
+                <p className="text-theme-muted font-mono">
                   Timezone: {interview?.interviewer.timezone} • Expertise: {interview?.interviewer.expertise.join(', ')}
                 </p>
               </div>

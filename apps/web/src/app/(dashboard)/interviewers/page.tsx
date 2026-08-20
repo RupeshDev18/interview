@@ -45,13 +45,13 @@ export default function InterviewersPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-sunset-cream flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sunset-orange to-sunset-crimson flex items-center justify-center shadow-md shadow-sunset-orange/20">
-              <UserCheck className="h-4 w-4 text-sunset-cream" />
+          <h1 className="text-2xl font-bold tracking-tight text-theme-primary flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-theme-accent flex items-center justify-center shadow-md shadow-black/10">
+              <UserCheck className="h-4 w-4 text-white" />
             </div>
             Technical Interviewers Directory
           </h1>
-          <p className="text-sm text-stone-400 mt-1">
+          <p className="text-sm text-theme-muted mt-1">
             Browse active technical evaluators, domain expertise, timezones, and scheduling availability.
           </p>
         </div>
@@ -62,23 +62,23 @@ export default function InterviewersPage() {
             size="sm"
             onClick={handleRefresh}
             disabled={isFetching}
-            className="border-[#36271D] bg-[#18110C] text-stone-300 hover:text-sunset-cream hover:bg-[#251A13]"
+            className="border-theme bg-card text-theme-primary hover:bg-surface-subtle"
           >
-            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? 'animate-spin text-sunset-orange' : 'text-sunset-amber'}`} />
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? 'animate-spin text-theme-accent' : 'text-theme-muted'}`} />
             Refresh
           </Button>
         </div>
       </div>
 
       {/* Search & Availability Toggle */}
-      <div className="bg-[#18110C]/90 p-4 rounded-xl border border-[#36271D] flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-card p-4 rounded-xl border border-theme flex flex-wrap items-center justify-between gap-4 shadow-sm">
         <div className="relative flex-1 min-w-[260px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-sunset-amber/60" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-theme-muted" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search interviewers by name or technical skills..."
-            className="pl-9 bg-[#120B07] border-[#36271D] text-sunset-cream placeholder:text-stone-500 focus-visible:ring-sunset-orange focus-visible:border-sunset-orange"
+            className="pl-9 bg-surface border-theme text-theme-primary placeholder:text-theme-muted focus-visible:ring-theme-accent focus-visible:border-theme-accent"
           />
         </div>
 
@@ -87,8 +87,8 @@ export default function InterviewersPage() {
             onClick={() => setOnlyAvailable(undefined)}
             className={`px-3 py-1.5 rounded-full transition-all ${
               onlyAvailable === undefined
-                ? 'bg-gradient-to-r from-sunset-orange to-sunset-crimson text-sunset-cream shadow-sm'
-                : 'bg-[#231711] text-stone-400 hover:text-sunset-cream'
+                ? 'bg-theme-accent text-white shadow-sm'
+                : 'bg-surface text-theme-muted border border-theme hover:border-theme-accent/50 hover:text-theme-primary'
             }`}
           >
             All Evaluators ({interviewers.length})
@@ -97,8 +97,8 @@ export default function InterviewersPage() {
             onClick={() => setOnlyAvailable(true)}
             className={`px-3 py-1.5 rounded-full transition-all ${
               onlyAvailable === true
-                ? 'bg-gradient-to-r from-sunset-orange to-sunset-crimson text-sunset-cream shadow-sm'
-                : 'bg-[#231711] text-stone-400 hover:text-sunset-cream'
+                ? 'bg-theme-accent text-white shadow-sm'
+                : 'bg-surface text-theme-muted border border-theme hover:border-theme-accent/50 hover:text-theme-primary'
             }`}
           >
             Available Only
@@ -110,41 +110,45 @@ export default function InterviewersPage() {
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-44 rounded-xl bg-[#18110C]/80 border border-[#36271D] p-4 animate-pulse" />
+            <div key={i} className="h-44 rounded-xl bg-card border border-theme p-4 space-y-3">
+              <Skeleton className="h-5 w-36 bg-surface-subtle" />
+              <Skeleton className="h-4 w-24 bg-surface-subtle" />
+              <Skeleton className="h-3 w-full bg-surface-subtle" />
+            </div>
           ))}
         </div>
       ) : interviewers.length === 0 ? (
-        <div className="p-12 text-center bg-[#18110C]/40 rounded-xl border border-[#36271D]">
-          <UserCheck className="h-10 w-10 text-stone-500 mx-auto mb-2" />
-          <h3 className="text-sm font-bold text-sunset-cream">No interviewers found</h3>
-          <p className="text-xs text-stone-400 mt-1">Try adjusting your search filters.</p>
+        <div className="p-12 text-center bg-card rounded-xl border border-theme shadow-sm">
+          <UserCheck className="h-10 w-10 text-theme-muted mx-auto mb-2 opacity-50" />
+          <h3 className="text-sm font-bold text-theme-primary">No interviewers found</h3>
+          <p className="text-xs text-theme-muted mt-1">Try adjusting your search filters.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {interviewers.map((intv) => (
             <div
               key={intv.id}
-              className="p-5 rounded-xl bg-[#18110C]/90 border border-[#36271D] hover:border-sunset-orange/40 hover:bg-[#20150F] transition-all flex flex-col justify-between group space-y-4 shadow-md"
+              className="p-5 rounded-xl bg-card border border-theme hover:border-theme-accent/40 hover:bg-surface-subtle/50 transition-all flex flex-col justify-between group space-y-4 shadow-sm"
             >
               <div>
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-sunset-orange/20 border border-sunset-orange/30 flex items-center justify-center text-sunset-amber font-bold text-sm font-mono">
+                    <div className="w-10 h-10 rounded-full bg-theme-accent/15 border border-theme-accent/30 flex items-center justify-center text-theme-accent font-bold text-sm font-mono">
                       {intv.user.firstName[0]}{intv.user.lastName[0]}
                     </div>
                     <div>
-                      <h3 className="font-bold text-sunset-cream group-hover:text-sunset-amber transition-colors">
+                      <h3 className="font-bold text-theme-primary group-hover:text-theme-accent transition-colors">
                         {intv.user.firstName} {intv.user.lastName}
                       </h3>
-                      <p className="text-xs text-stone-400 font-mono">{intv.user.email}</p>
+                      <p className="text-xs text-theme-muted font-mono">{intv.user.email}</p>
                     </div>
                   </div>
 
                   <span
                     className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border font-mono ${
                       intv.isAvailable
-                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                        : 'bg-stone-800 text-stone-400 border-stone-700'
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                        : 'bg-surface-subtle text-theme-muted border-theme'
                     }`}
                   >
                     {intv.isAvailable ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
@@ -153,18 +157,18 @@ export default function InterviewersPage() {
                 </div>
 
                 {intv.bio && (
-                  <p className="text-xs text-stone-300 mt-3 leading-relaxed line-clamp-2">
+                  <p className="text-xs text-theme-muted mt-3 leading-relaxed line-clamp-2">
                     {intv.bio}
                   </p>
                 )}
 
-                <div className="mt-3 flex items-center gap-4 text-xs text-stone-400">
+                <div className="mt-3 flex items-center gap-4 text-xs text-theme-muted">
                   <span className="flex items-center gap-1">
-                    <Briefcase className="h-3.5 w-3.5 text-sunset-orange" />
+                    <Briefcase className="h-3.5 w-3.5 text-theme-accent" />
                     {intv.yearsOfExperience} yrs exp
                   </span>
                   <span className="flex items-center gap-1 font-mono">
-                    <Globe className="h-3.5 w-3.5 text-sunset-amber" />
+                    <Globe className="h-3.5 w-3.5 text-theme-accent" />
                     {intv.timezone}
                   </span>
                 </div>
@@ -174,7 +178,7 @@ export default function InterviewersPage() {
                     {intv.expertise.map((exp) => (
                       <span
                         key={exp}
-                        className="text-[10px] bg-[#241710] text-sunset-amber px-2 py-0.5 rounded border border-[#3D2D22] font-mono"
+                        className="text-[10px] bg-surface-subtle text-theme-primary px-2 py-0.5 rounded border border-theme font-mono font-medium"
                       >
                         {exp}
                       </span>

@@ -12,7 +12,6 @@ import {
   FileText,
   Award,
   ChevronRight,
-  ExternalLink,
   History,
 } from 'lucide-react';
 import { format, formatDistanceToNow, isPast } from 'date-fns';
@@ -46,13 +45,13 @@ export function InterviewTable({
         {[1, 2, 3, 4, 5].map((n) => (
           <div
             key={n}
-            className="h-20 bg-slate-900/60 rounded-xl border border-slate-800 p-4 flex items-center justify-between"
+            className="h-20 bg-card rounded-xl border border-theme p-4 flex items-center justify-between"
           >
             <div className="space-y-2">
-              <Skeleton className="h-4 w-48 bg-slate-800" />
-              <Skeleton className="h-3 w-32 bg-slate-800" />
+              <Skeleton className="h-4 w-48 bg-surface-subtle" />
+              <Skeleton className="h-3 w-32 bg-surface-subtle" />
             </div>
-            <Skeleton className="h-8 w-24 bg-slate-800" />
+            <Skeleton className="h-8 w-24 bg-surface-subtle" />
           </div>
         ))}
       </div>
@@ -61,12 +60,12 @@ export function InterviewTable({
 
   if (interviews.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-900/40 rounded-xl border border-slate-800">
-        <div className="w-12 h-12 rounded-full bg-slate-800/80 flex items-center justify-center text-slate-400 mb-3">
+      <div className="flex flex-col items-center justify-center p-12 text-center bg-card rounded-xl border border-theme shadow-sm">
+        <div className="w-12 h-12 rounded-full bg-surface-subtle flex items-center justify-center text-theme-muted mb-3 opacity-60">
           <Calendar className="h-6 w-6" />
         </div>
-        <h3 className="text-base font-semibold text-slate-200">No interviews found</h3>
-        <p className="text-sm text-slate-400 max-w-sm mt-1">
+        <h3 className="text-base font-semibold text-theme-primary">No interviews found</h3>
+        <p className="text-sm text-theme-muted max-w-sm mt-1">
           No interview records match the selected filters. Try adjusting your search or schedule a new interview.
         </p>
       </div>
@@ -78,26 +77,26 @@ export function InterviewTable({
       case InterviewStatus.SCHEDULED:
       case InterviewStatus.CONFIRMED:
         return (
-          <Badge className="bg-sunset-amber/10 text-sunset-amber border border-sunset-amber/30 hover:bg-sunset-amber/20 gap-1 font-medium text-xs">
+          <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 gap-1 font-medium text-xs">
             <Clock className="h-3 w-3" /> Scheduled
           </Badge>
         );
       case InterviewStatus.IN_PROGRESS:
         return (
-          <Badge className="bg-sunset-orange/20 text-sunset-orange border border-sunset-orange/40 hover:bg-sunset-orange/30 gap-1 font-bold text-xs animate-pulse">
+          <Badge className="bg-theme-accent text-white gap-1 font-bold text-xs animate-pulse">
             <PlayCircle className="h-3 w-3" /> Live Now
           </Badge>
         );
       case InterviewStatus.COMPLETED:
         return (
-          <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 gap-1 font-medium text-xs">
+          <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 gap-1 font-medium text-xs">
             <CheckCircle2 className="h-3 w-3" /> Completed
           </Badge>
         );
       case InterviewStatus.CANCELLED:
       case InterviewStatus.NO_SHOW:
         return (
-          <Badge className="bg-sunset-crimson/15 text-rose-400 border border-sunset-crimson/30 hover:bg-sunset-crimson/25 gap-1 font-medium text-xs">
+          <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30 gap-1 font-medium text-xs">
             <XCircle className="h-3 w-3" /> {status === InterviewStatus.CANCELLED ? 'Cancelled' : 'No Show'}
           </Badge>
         );
@@ -115,31 +114,31 @@ export function InterviewTable({
               e.stopPropagation();
               onOpenFeedback(interview);
             }}
-            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-sunset-orange/20 to-sunset-amber/20 text-sunset-amber border border-sunset-orange/40 hover:bg-sunset-orange/30 transition-all shadow-sm"
+            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-theme-accent-light text-theme-primary border border-theme hover:opacity-90 transition-all shadow-sm"
           >
-            <Award className="h-3 w-3 text-sunset-orange" />
+            <Award className="h-3 w-3 text-theme-accent" />
             Submit Feedback
           </button>
         );
       }
       return (
-        <span className="text-xs text-stone-500 italic">
+        <span className="text-xs text-theme-muted italic">
           Feedback pending
         </span>
       );
     }
 
     const { recommendation, overallScore } = interview.feedback;
-    let colorClass = 'bg-[#231711] text-stone-300 border-[#3D2D22]';
+    let colorClass = 'bg-surface-subtle text-theme-primary border-theme';
 
     if (recommendation === Recommendation.STRONG_HIRE || recommendation === Recommendation.HIRE) {
-      colorClass = 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30';
+      colorClass = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30';
     } else if (recommendation === Recommendation.NEXT_ROUND) {
-      colorClass = 'bg-sunset-amber/15 text-sunset-amber border-sunset-amber/40';
+      colorClass = 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30';
     } else if (recommendation === Recommendation.HOLD) {
-      colorClass = 'bg-sunset-orange/15 text-sunset-orange border-sunset-orange/40';
+      colorClass = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30';
     } else if (recommendation === Recommendation.REJECT) {
-      colorClass = 'bg-sunset-crimson/20 text-rose-300 border-sunset-crimson/40';
+      colorClass = 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30';
     }
 
     return (
@@ -147,10 +146,10 @@ export function InterviewTable({
         <span
           className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${colorClass}`}
         >
-          <Award className="h-3 w-3 text-sunset-amber" />
+          <Award className="h-3 w-3 text-theme-accent" />
           {recommendation.replace('_', ' ')}
           {overallScore && (
-            <span className="ml-1 font-bold text-sunset-cream font-mono">({Number(overallScore).toFixed(1)}/5)</span>
+            <span className="ml-1 font-bold text-theme-primary font-mono">({Number(overallScore).toFixed(1)}/5)</span>
           )}
         </span>
       </div>
@@ -158,10 +157,10 @@ export function InterviewTable({
   };
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[#36271D] bg-[#18110C]/90 shadow-2xl backdrop-blur-md">
+    <div className="overflow-hidden rounded-xl border border-theme bg-card shadow-sm">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm text-stone-200">
-          <thead className="bg-[#120B07] text-xs uppercase tracking-wider text-stone-400 border-b border-[#36271D] font-semibold">
+        <table className="w-full text-left text-sm text-theme-primary">
+          <thead className="bg-surface-subtle text-xs uppercase tracking-wider text-theme-muted border-b border-theme font-semibold">
             <tr>
               <th className="py-3.5 px-4">Candidate & Role</th>
               <th className="py-3.5 px-4">Interview Type</th>
@@ -172,23 +171,22 @@ export function InterviewTable({
               <th className="py-3.5 px-4 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#36271D]">
+          <tbody className="divide-y divide-theme">
             {interviews.map((interview) => {
               const startDate = new Date(interview.scheduledStart);
               const endDate = new Date(interview.scheduledEnd);
-              const isPastDate = isPast(endDate);
 
               return (
                 <tr
                   key={interview.id}
                   onClick={() => onSelectInterview(interview)}
-                  className="hover:bg-[#231711] cursor-pointer transition-colors group"
+                  className="hover:bg-surface-subtle cursor-pointer transition-colors group"
                 >
                   {/* Candidate */}
                   <td className="py-4 px-4">
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sunset-cream group-hover:text-sunset-amber transition-colors">
+                        <span className="font-semibold text-theme-primary group-hover:text-theme-accent transition-colors">
                           {interview.candidate.firstName} {interview.candidate.lastName}
                         </span>
                         <button
@@ -197,12 +195,12 @@ export function InterviewTable({
                             onViewCandidateDossier(interview.candidate.id);
                           }}
                           title="View 360° Round Dossier"
-                          className="text-stone-500 hover:text-sunset-amber transition-colors"
+                          className="text-theme-muted hover:text-theme-accent transition-colors"
                         >
                           <History className="h-3.5 w-3.5" />
                         </button>
                       </div>
-                      <span className="text-xs text-stone-400">
+                      <span className="text-xs text-theme-muted">
                         {interview.candidate.currentRole || 'Candidate'}
                       </span>
                       {interview.candidate.skills && interview.candidate.skills.length > 0 && (
@@ -210,7 +208,7 @@ export function InterviewTable({
                           {interview.candidate.skills.slice(0, 3).map((skill) => (
                             <span
                               key={skill}
-                              className="text-[10px] bg-[#241710] text-stone-300 px-1.5 py-0.2 rounded border border-[#3D2D22]"
+                              className="text-[10px] bg-surface-subtle text-theme-muted px-1.5 py-0.5 rounded border border-theme"
                             >
                               {skill}
                             </span>
@@ -223,14 +221,14 @@ export function InterviewTable({
                   {/* Interview Type & Round */}
                   <td className="py-4 px-4">
                     <div className="flex flex-col gap-1">
-                      <span className="font-medium text-stone-200">
+                      <span className="font-medium text-theme-primary">
                         {interview.interviewType.name}
                       </span>
                       <div className="flex items-center gap-1.5">
-                        <span className="inline-block text-[11px] font-semibold text-sunset-orange bg-sunset-orange/10 px-1.5 py-0.5 rounded border border-sunset-orange/30">
+                        <span className="inline-block text-[11px] font-semibold text-theme-accent bg-surface-subtle px-1.5 py-0.5 rounded border border-theme">
                           Round {interview.roundNumber}
                         </span>
-                        <span className="text-xs text-stone-400 font-mono">
+                        <span className="text-xs text-theme-muted font-mono">
                           {interview.interviewType.durationMinutes}m
                         </span>
                       </div>
@@ -240,15 +238,15 @@ export function InterviewTable({
                   {/* Interviewer */}
                   <td className="py-4 px-4">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-full bg-sunset-orange/20 border border-sunset-orange/30 flex items-center justify-center flex-shrink-0 text-xs font-semibold text-sunset-amber">
+                      <div className="w-7 h-7 rounded-full bg-theme-accent/15 border border-theme-accent/30 flex items-center justify-center flex-shrink-0 text-xs font-semibold text-theme-accent">
                         {interview.interviewer.user.firstName[0]}
                         {interview.interviewer.user.lastName[0]}
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium text-stone-200">
+                        <span className="text-sm font-medium text-theme-primary">
                           {interview.interviewer.user.firstName} {interview.interviewer.user.lastName}
                         </span>
-                        <span className="text-xs text-stone-400">
+                        <span className="text-xs text-theme-muted">
                           {interview.interviewer.timezone}
                         </span>
                       </div>
@@ -258,15 +256,15 @@ export function InterviewTable({
                   {/* Date & Time */}
                   <td className="py-4 px-4">
                     <div className="flex flex-col">
-                      <span className="text-sm font-medium text-stone-200 flex items-center gap-1.5">
-                        <Calendar className="h-3.5 w-3.5 text-sunset-amber" />
+                      <span className="text-sm font-medium text-theme-primary flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5 text-theme-accent" />
                         {format(startDate, 'MMM d, yyyy')}
                       </span>
-                      <span className="text-xs text-stone-400 flex items-center gap-1.5 mt-0.5 font-mono">
-                        <Clock className="h-3.5 w-3.5 text-stone-500" />
+                      <span className="text-xs text-theme-muted flex items-center gap-1.5 mt-0.5 font-mono">
+                        <Clock className="h-3.5 w-3.5 text-theme-muted" />
                         {format(startDate, 'h:mm a')} - {format(endDate, 'h:mm a')}
                       </span>
-                      <span className="text-[11px] text-stone-500 mt-0.5">
+                      <span className="text-[11px] text-theme-muted mt-0.5">
                         {formatDistanceToNow(startDate, { addSuffix: true })}
                       </span>
                     </div>
@@ -292,12 +290,12 @@ export function InterviewTable({
                           e.stopPropagation();
                           onSelectInterview(interview);
                         }}
-                        className="text-xs text-stone-300 hover:text-sunset-cream hover:bg-[#2A1D16] gap-1 px-2.5"
+                        className="text-xs text-theme-muted hover:text-theme-primary hover:bg-surface-subtle gap-1 px-2.5"
                       >
-                        <FileText className="h-3.5 w-3.5 text-sunset-orange" />
+                        <FileText className="h-3.5 w-3.5 text-theme-accent" />
                         Notes
                       </Button>
-                      <ChevronRight className="h-4 w-4 text-stone-600 group-hover:text-sunset-amber transition-colors" />
+                      <ChevronRight className="h-4 w-4 text-theme-muted group-hover:text-theme-accent transition-colors" />
                     </div>
                   </td>
                 </tr>

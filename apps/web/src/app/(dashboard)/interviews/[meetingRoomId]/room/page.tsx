@@ -58,22 +58,7 @@ export default function InterviewRoomPage() {
 
   const interview = room.data;
 
-  // Sync initial notes
-  useEffect(() => {
-    if (interview?.notes) {
-      setNotes(interview.notes);
-    }
-  }, [interview?.notes]);
-
-  // Call timer
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setElapsedSeconds((prev) => prev + 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // WebRTC Hook
+  // WebRTC hook
   const {
     status,
     isMicOn,
@@ -88,40 +73,37 @@ export default function InterviewRoomPage() {
     disconnect,
   } = useWebRtcRoom({
     meetingRoomId: meetingRoomId || '',
-    token,
-    autoConnect: !!token && !!meetingRoomId,
+    token: token || undefined,
+    autoConnect: true,
   });
 
-  // Save notes mutation
+  // Call timer
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const saveNotes = useMutation({
-    mutationFn: () => interviewsService.updateNotes(interview!.id, { notes }),
+    mutationFn: () =>
+      interviewsService.updateNotes(interview!.id, { notes }),
     onSuccess: () => {
       toast({ title: 'Notes saved' });
     },
-    onError: () => {
-      toast({ title: 'Failed to save notes', variant: 'destructive' });
-    },
   });
 
-  // Submit scorecard feedback mutation
   const submitFeedback = useMutation({
     mutationFn: () =>
       feedbackService.submit(interview!.id, {
         scores,
         recommendation,
+        strengths: notes || undefined,
       }),
     onSuccess: () => {
-      toast({ title: 'Scorecard submitted successfully' });
-    },
-    onError: () => {
-      toast({ title: 'Failed to submit scorecard', variant: 'destructive' });
+      toast({ title: 'Feedback submitted successfully' });
     },
   });
-
-  const handleLeave = () => {
-    disconnect();
-    router.push('/interviews');
-  };
 
   const formatTimer = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -129,75 +111,83 @@ export default function InterviewRoomPage() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleLeave = () => {
+    disconnect();
+    router.push('/interviews');
+  };
+
   if (room.isLoading) {
     return (
-      <div className="space-y-4 p-8">
-        <Skeleton className="h-10 w-72" />
-        <Skeleton className="h-96 w-full" />
+      <div className="space-y-4 p-6">
+        <Skeleton className="h-10 w-72 bg-surface-subtle" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Skeleton className="lg:col-span-2 h-96 rounded-2xl bg-surface-subtle" />
+          <Skeleton className="h-96 rounded-2xl bg-surface-subtle" />
+        </div>
       </div>
     );
   }
 
   if (!interview) {
     return (
-      <div className="p-8 rounded-2xl bg-[#18110C] border border-[#36271D] text-stone-300">
-        Interview room not found or you do not have permission to join.
+      <div className="p-12 text-center rounded-2xl bg-card border border-theme space-y-3">
+        <h2 className="text-base font-bold text-theme-primary">Meeting room not found</h2>
+        <p className="text-xs text-theme-muted">The requested interview session could not be resolved.</p>
+        <Button onClick={() => router.push('/interviews')} className="gradient-theme-btn text-xs">
+          Back to Interviews
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1fr_380px] pb-8">
-      {/* Left Column: Video Feeds & Controls */}
-      <main className="space-y-4">
-        {/* Room Header */}
-        <div className="flex items-center justify-between p-4 rounded-xl border border-[#36271D] bg-[#18110C]">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold text-sunset-cream">
-                {interview.candidate.firstName} {interview.candidate.lastName}
-              </h1>
-              <Badge
-                variant="outline"
-                className="text-xs text-sunset-amber border-sunset-amber/40 bg-sunset-amber/10"
-              >
-                {interview.interviewType.name}
-              </Badge>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-12">
+      {/* Left Column: Video & Controls */}
+      <main className="lg:col-span-2 space-y-4">
+        {/* Meeting Header Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl bg-card border border-theme shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-theme-accent/15 border border-theme-accent/30 text-theme-accent flex items-center justify-center font-bold text-sm font-mono">
+              R{interview.roundNumber}
             </div>
-            <p className="text-xs text-stone-400 mt-0.5">
-              Round {interview.roundNumber} • {interview.company.name}
-            </p>
+            <div>
+              <h1 className="font-bold text-sm text-theme-primary">
+                {interview.candidate.firstName} {interview.candidate.lastName} • {interview.interviewType.name}
+              </h1>
+              <p className="text-xs text-theme-muted font-mono mt-0.5">
+                Room: {meetingRoomId}
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Status indicator */}
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#120B07] border border-[#36271D] text-xs">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface border border-theme text-xs font-mono">
               {status === 'connected' ? (
                 <>
-                  <Wifi className="h-3.5 w-3.5 text-emerald-400" />
-                  <span className="text-emerald-400 font-mono">Connected</span>
+                  <Wifi className="h-3.5 w-3.5 text-emerald-500" />
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">Connected</span>
                 </>
               ) : status === 'connecting' ? (
                 <>
-                  <span className="w-2 h-2 rounded-full bg-sunset-amber animate-ping" />
-                  <span className="text-sunset-amber font-mono">Connecting...</span>
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+                  <span className="text-amber-600 dark:text-amber-400">Connecting...</span>
                 </>
               ) : (
                 <>
-                  <WifiOff className="h-3.5 w-3.5 text-stone-500" />
-                  <span className="text-stone-400 font-mono">Waiting for candidate</span>
+                  <WifiOff className="h-3.5 w-3.5 text-theme-muted" />
+                  <span className="text-theme-muted">Waiting</span>
                 </>
               )}
             </div>
 
-            <div className="px-3 py-1 rounded-full bg-[#120B07] border border-[#36271D] text-xs font-mono text-stone-300">
+            <div className="px-3 py-1 rounded-full bg-surface border border-theme text-xs font-mono text-theme-primary font-bold">
               {formatTimer(elapsedSeconds)}
             </div>
           </div>
         </div>
 
         {permissionError && (
-          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2">
+          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-300 text-xs flex items-center gap-2">
             <span className="font-semibold">Notice:</span> {permissionError}
           </div>
         )}
@@ -205,7 +195,7 @@ export default function InterviewRoomPage() {
         {/* Video Stage */}
         <div className="grid gap-4 md:grid-cols-2">
           {/* Remote (Candidate) Video */}
-          <div className="relative aspect-video rounded-2xl bg-black border border-[#36271D] overflow-hidden shadow-xl flex items-center justify-center">
+          <div className="relative aspect-video rounded-2xl bg-black border border-theme overflow-hidden shadow-md flex items-center justify-center">
             <video
               ref={remoteVideoRef}
               autoPlay
@@ -214,28 +204,28 @@ export default function InterviewRoomPage() {
             />
 
             {status !== 'connected' && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-2 bg-[#120B07]/90">
-                <div className="w-12 h-12 rounded-full bg-sunset-orange/10 border border-sunset-orange/20 text-sunset-orange flex items-center justify-center">
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-2 bg-black/80">
+                <div className="w-12 h-12 rounded-full bg-theme-accent/20 border border-theme-accent/30 text-white flex items-center justify-center">
                   <User className="h-6 w-6" />
                 </div>
-                <p className="text-xs font-semibold text-sunset-cream">
+                <p className="text-xs font-semibold text-white">
                   Waiting for candidate to join
                 </p>
-                <p className="text-[11px] text-stone-500 max-w-xs">
+                <p className="text-[11px] text-stone-300 max-w-xs">
                   {interview.candidate.firstName} {interview.candidate.lastName} has not entered the room yet.
                 </p>
               </div>
             )}
 
             {status === 'connected' && (
-              <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 text-xs font-medium text-sunset-cream">
+              <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 text-xs font-medium text-white">
                 {interview.candidate.firstName} {interview.candidate.lastName} (Candidate)
               </div>
             )}
           </div>
 
           {/* Local (Interviewer) Video */}
-          <div className="relative aspect-video rounded-2xl bg-black border border-[#36271D] overflow-hidden shadow-xl flex items-center justify-center">
+          <div className="relative aspect-video rounded-2xl bg-black border border-theme overflow-hidden shadow-md flex items-center justify-center">
             <video
               ref={localVideoRef}
               autoPlay
@@ -245,13 +235,13 @@ export default function InterviewRoomPage() {
             />
 
             {!isCameraOn && (
-              <div className="text-center space-y-1 text-stone-500">
+              <div className="text-center space-y-1 text-stone-400">
                 <VideoOff className="h-6 w-6 mx-auto" />
                 <p className="text-xs">Camera is off</p>
               </div>
             )}
 
-            <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 text-xs font-medium text-sunset-cream flex items-center gap-2">
+            <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 text-xs font-medium text-white flex items-center gap-2">
               <span>You (Interviewer)</span>
               {!isMicOn && <MicOff className="h-3.5 w-3.5 text-rose-400" />}
             </div>
@@ -259,14 +249,14 @@ export default function InterviewRoomPage() {
         </div>
 
         {/* Video Control Bar */}
-        <div className="flex justify-center items-center gap-3 p-3 rounded-xl border border-[#36271D] bg-[#18110C]">
+        <div className="flex justify-center items-center gap-3 p-3 rounded-xl border border-theme bg-card shadow-sm">
           <Button
             variant="outline"
             onClick={toggleMic}
-            className={`rounded-full w-10 h-10 p-0 ${
+            className={`rounded-full w-10 h-10 p-0 border ${
               isMicOn
-                ? 'border-[#3D2D22] bg-[#20150F] text-sunset-cream'
-                : 'border-rose-500/50 bg-rose-500/20 text-rose-400'
+                ? 'border-theme bg-surface text-theme-primary hover:bg-surface-subtle'
+                : 'border-rose-500/50 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20'
             }`}
             title={isMicOn ? 'Mute Mic' : 'Unmute Mic'}
           >
@@ -276,10 +266,10 @@ export default function InterviewRoomPage() {
           <Button
             variant="outline"
             onClick={toggleCamera}
-            className={`rounded-full w-10 h-10 p-0 ${
+            className={`rounded-full w-10 h-10 p-0 border ${
               isCameraOn
-                ? 'border-[#3D2D22] bg-[#20150F] text-sunset-cream'
-                : 'border-rose-500/50 bg-rose-500/20 text-rose-400'
+                ? 'border-theme bg-surface text-theme-primary hover:bg-surface-subtle'
+                : 'border-rose-500/50 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20'
             }`}
             title={isCameraOn ? 'Turn Off Camera' : 'Turn On Camera'}
           >
@@ -289,10 +279,10 @@ export default function InterviewRoomPage() {
           <Button
             variant="outline"
             onClick={toggleScreenShare}
-            className={`rounded-full w-10 h-10 p-0 ${
+            className={`rounded-full w-10 h-10 p-0 border ${
               isScreenSharing
-                ? 'border-sunset-orange bg-sunset-orange/20 text-sunset-amber'
-                : 'border-[#3D2D22] bg-[#20150F] text-sunset-cream'
+                ? 'border-theme bg-theme-accent text-white'
+                : 'border-theme bg-surface text-theme-primary hover:bg-surface-subtle'
             }`}
             title={isScreenSharing ? 'Stop Screen Sharing' : 'Share Screen'}
           >
@@ -313,10 +303,10 @@ export default function InterviewRoomPage() {
       {/* Right Column: Live Notes & Scorecard */}
       <aside className="space-y-4">
         {/* Live Scratchpad */}
-        <section className="rounded-xl border border-[#36271D] bg-[#18110C] p-4 space-y-3 shadow-md">
+        <section className="rounded-xl border border-theme bg-card p-4 space-y-3 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-sm text-sunset-cream flex items-center gap-1.5">
-              <FileText className="h-4 w-4 text-sunset-orange" />
+            <h2 className="font-semibold text-sm text-theme-primary flex items-center gap-1.5">
+              <FileText className="h-4 w-4 text-theme-accent" />
               Live Notes
             </h2>
             <Button
@@ -324,7 +314,7 @@ export default function InterviewRoomPage() {
               variant="outline"
               onClick={() => saveNotes.mutate()}
               disabled={saveNotes.isPending}
-              className="h-7 text-xs border-[#36271D] text-stone-300 hover:text-sunset-cream bg-[#231711]"
+              className="h-7 text-xs border-theme text-theme-primary hover:bg-surface-subtle bg-surface"
             >
               {saveNotes.isPending ? 'Saving…' : 'Save'}
             </Button>
@@ -334,15 +324,15 @@ export default function InterviewRoomPage() {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Type observations, candidate responses, technical feedback during the call..."
-            className="min-h-[160px] w-full rounded-lg bg-[#120B07] border border-[#36271D] p-3 text-xs text-sunset-cream placeholder:text-stone-600 focus:outline-none focus:ring-1 focus:ring-sunset-orange font-mono leading-relaxed resize-none"
+            className="min-h-[160px] w-full rounded-lg bg-surface border border-theme p-3 text-xs text-theme-primary placeholder:text-theme-muted focus:outline-none focus:ring-1 focus:ring-theme-accent font-mono leading-relaxed resize-none"
           />
         </section>
 
         {/* Evaluation Scorecard */}
-        <section className="rounded-xl border border-[#36271D] bg-[#18110C] p-4 space-y-4 shadow-md">
+        <section className="rounded-xl border border-theme bg-card p-4 space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-sm text-sunset-cream flex items-center gap-1.5">
-              <Award className="h-4 w-4 text-sunset-orange" />
+            <h2 className="font-semibold text-sm text-theme-primary flex items-center gap-1.5">
+              <Award className="h-4 w-4 text-theme-accent" />
               Scorecard & Rating
             </h2>
           </div>
@@ -353,9 +343,9 @@ export default function InterviewRoomPage() {
               {interview.questions.map((q: InterviewQuestionDto, idx: number) => (
                 <div
                   key={q.id}
-                  className="p-2.5 rounded-lg bg-[#120B07] border border-[#36271D] space-y-2"
+                  className="p-2.5 rounded-lg bg-surface border border-theme space-y-2"
                 >
-                  <p className="text-xs text-sunset-cream font-medium">
+                  <p className="text-xs text-theme-primary font-medium">
                     {idx + 1}. {q.questionText}
                   </p>
                   <div className="flex items-center gap-1">
@@ -368,15 +358,15 @@ export default function InterviewRoomPage() {
                         }
                         className={`p-1 rounded transition-colors ${
                           (scores[q.id] || 0) >= val
-                            ? 'text-sunset-amber'
-                            : 'text-stone-700 hover:text-stone-500'
+                            ? 'text-amber-400'
+                            : 'text-stone-300 dark:text-stone-700 hover:text-stone-400'
                         }`}
                       >
                         <Star className="h-3.5 w-3.5 fill-current" />
                       </button>
                     ))}
                     {scores[q.id] && (
-                      <span className="text-[11px] text-sunset-amber font-mono ml-2">
+                      <span className="text-[11px] text-theme-accent font-mono ml-2 font-bold">
                         {scores[q.id]}/5
                       </span>
                     )}
@@ -388,13 +378,13 @@ export default function InterviewRoomPage() {
 
           {/* Overall Recommendation */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-stone-300">
+            <label className="text-xs font-medium text-theme-primary">
               Recommendation
             </label>
             <select
               value={recommendation}
               onChange={(e) => setRecommendation(e.target.value as Recommendation)}
-              className="w-full rounded-lg bg-[#120B07] border border-[#36271D] p-2 text-xs text-sunset-cream focus:outline-none focus:ring-1 focus:ring-sunset-orange"
+              className="w-full rounded-lg bg-surface border border-theme p-2 text-xs text-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-accent"
             >
               {Object.values(Recommendation).map((value) => (
                 <option key={value} value={value}>
@@ -407,7 +397,7 @@ export default function InterviewRoomPage() {
           <Button
             onClick={() => submitFeedback.mutate()}
             disabled={submitFeedback.isPending}
-            className="w-full text-xs gradient-sunset-btn font-semibold"
+            className="w-full text-xs gradient-theme-btn font-semibold"
           >
             {submitFeedback.isPending ? 'Submitting…' : 'Submit Scorecard'}
           </Button>

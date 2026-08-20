@@ -42,90 +42,96 @@ export function LoginForm() {
     <div className="w-full max-w-md space-y-6">
       {/* Brand Header */}
       <div className="text-center space-y-2">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-sunset-orange to-sunset-crimson shadow-lg shadow-sunset-orange/20 mb-2">
-          <span className="text-sunset-cream font-bold text-xl">IP</span>
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-theme-accent text-white shadow-md shadow-black/10 mb-2">
+          <span className="font-bold text-xl">IP</span>
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-sunset-cream">
+        <h1 className="text-2xl font-bold tracking-tight text-theme-primary">
           Welcome to InterviewOS
         </h1>
-        <p className="text-stone-400 text-sm">
-          Sign in to your high-velocity hiring workspace
+        <p className="text-theme-muted text-sm">
+          Sign in to your high-velocity technical hiring workspace
         </p>
       </div>
 
       {/* Card */}
-      <div className="bg-[#18110C]/90 backdrop-blur-xl border border-[#36271D] rounded-2xl p-7 shadow-2xl space-y-6">
+      <div className="bg-card backdrop-blur-xl border border-theme rounded-2xl p-7 shadow-sm space-y-6">
         {/* Quick Demo Credentials */}
-        <div className="p-3.5 rounded-xl bg-[#120B07] border border-[#36271D] space-y-2.5">
-          <div className="flex items-center justify-between text-[11px] font-mono text-sunset-amber">
-            <span className="flex items-center gap-1.5 font-semibold">
-              <Sparkles className="h-3.5 w-3.5 text-sunset-orange" />
-              Quick Demo Accounts
+        <div className="p-3.5 rounded-xl bg-surface-subtle border border-theme space-y-2.5">
+          <div className="flex items-center justify-between text-[11px] font-mono text-theme-accent">
+            <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider">
+              <Sparkles className="h-3 w-3" /> Quick Demo Login
             </span>
-            <span className="text-stone-500">1-click fill</span>
+            <span className="text-[10px] text-theme-muted font-sans">1-Click Fill</span>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-1.5">
             <button
               type="button"
-              onClick={() => handleDemoFill('rupesh.dev2002@gmail.com', 'Admin@123456')}
-              className="px-2.5 py-1.5 rounded-lg bg-[#20150F] border border-[#36271D] hover:border-sunset-orange/50 text-[11px] text-sunset-cream flex flex-col items-center gap-1 transition-all group"
+              onClick={() => handleDemoFill('rupesh.dev2002@gmail.com', 'admin123')}
+              className="px-2 py-1.5 rounded-lg bg-surface border border-theme hover:border-theme-accent/50 text-[11px] font-semibold text-theme-primary transition-all flex flex-col items-center gap-0.5"
             >
-              <Shield className="h-3.5 w-3.5 text-sunset-crimson group-hover:scale-110 transition-transform" />
-              <span className="font-semibold">Super Admin</span>
+              <Shield className="h-3.5 w-3.5 text-theme-accent" />
+              <span>Admin</span>
             </button>
 
             <button
               type="button"
-              onClick={() => handleDemoFill('recruiter@acme.com', 'Recruiter@123456')}
-              className="px-2.5 py-1.5 rounded-lg bg-[#20150F] border border-[#36271D] hover:border-sunset-orange/50 text-[11px] text-sunset-cream flex flex-col items-center gap-1 transition-all group"
+              onClick={() => handleDemoFill('recruiter@acme.com', 'admin123')}
+              className="px-2 py-1.5 rounded-lg bg-surface border border-theme hover:border-theme-accent/50 text-[11px] font-semibold text-theme-primary transition-all flex flex-col items-center gap-0.5"
             >
-              <Briefcase className="h-3.5 w-3.5 text-sunset-orange group-hover:scale-110 transition-transform" />
-              <span className="font-semibold">Recruiter</span>
+              <Briefcase className="h-3.5 w-3.5 text-theme-accent" />
+              <span>Recruiter</span>
             </button>
 
             <button
               type="button"
-              onClick={() => handleDemoFill('interviewer@acme.com', 'Interviewer@123456')}
-              className="px-2.5 py-1.5 rounded-lg bg-[#20150F] border border-[#36271D] hover:border-sunset-orange/50 text-[11px] text-sunset-cream flex flex-col items-center gap-1 transition-all group"
+              onClick={() => handleDemoFill('interviewer@acme.com', 'admin123')}
+              className="px-2 py-1.5 rounded-lg bg-surface border border-theme hover:border-theme-accent/50 text-[11px] font-semibold text-theme-primary transition-all flex flex-col items-center gap-0.5"
             >
-              <UserCheck className="h-3.5 w-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
-              <span className="font-semibold">Interviewer</span>
+              <UserCheck className="h-3.5 w-3.5 text-theme-accent" />
+              <span>Interviewer</span>
             </button>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-          {/* Email */}
+        {/* Form */}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+          {login.error && (
+            <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs">
+              {(login.error as { response?: { data?: { error?: { message?: string } } } })
+                ?.response?.data?.error?.message ||
+                'Invalid credentials. Please check your email and password.'}
+            </div>
+          )}
+
           <div className="space-y-1.5">
-            <Label htmlFor="email" className="text-sunset-cream text-xs font-semibold">
-              Email address
+            <Label htmlFor="email" className="text-xs font-semibold text-theme-primary">
+              Work Email
             </Label>
             <Input
               id="email"
               type="email"
+              placeholder="name@company.com"
               autoComplete="email"
-              placeholder="you@company.com"
+              {...register('email')}
               className={cn(
-                'bg-[#120B07] border-[#36271D] text-sunset-cream placeholder:text-stone-600 focus-visible:ring-sunset-orange',
+                'bg-surface border-theme text-theme-primary placeholder:text-theme-muted text-xs h-10',
                 errors.email && 'border-rose-500 focus-visible:ring-rose-500',
               )}
-              {...register('email')}
             />
             {errors.email && (
-              <p className="text-rose-400 text-xs font-medium">{errors.email.message}</p>
+              <p className="text-xs text-rose-500">{errors.email.message}</p>
             )}
           </div>
 
-          {/* Password */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password" className="text-sunset-cream text-xs font-semibold">
+              <Label htmlFor="password" className="text-xs font-semibold text-theme-primary">
                 Password
               </Label>
               <Link
                 href="/forgot-password"
-                className="text-xs text-sunset-amber hover:underline transition-colors"
+                className="text-xs text-theme-accent hover:underline"
               >
                 Forgot password?
               </Link>
@@ -134,43 +140,49 @@ export function LoginForm() {
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
                 placeholder="••••••••"
+                autoComplete="current-password"
+                {...register('password')}
                 className={cn(
-                  'bg-[#120B07] border-[#36271D] text-sunset-cream placeholder:text-stone-600 focus-visible:ring-sunset-orange pr-10',
+                  'bg-surface border-theme text-theme-primary placeholder:text-theme-muted pr-10 text-xs h-10',
                   errors.password && 'border-rose-500 focus-visible:ring-rose-500',
                 )}
-                {...register('password')}
               />
               <button
                 type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 hover:text-sunset-cream transition-colors"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-muted hover:text-theme-primary transition-colors"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
               </button>
             </div>
             {errors.password && (
-              <p className="text-rose-400 text-xs font-medium">{errors.password.message}</p>
+              <p className="text-xs text-rose-500">{errors.password.message}</p>
             )}
           </div>
 
-          {/* Submit */}
           <Button
             type="submit"
-            className="w-full gradient-sunset-btn font-semibold text-sm h-10 shadow-lg shadow-sunset-orange/20 mt-2"
+            className="w-full gradient-theme-btn h-10 text-xs font-bold shadow-md gap-2"
             disabled={isSubmitting || login.isPending}
           >
-            <LogIn className="h-4 w-4 mr-2" />
-            {login.isPending ? 'Signing in…' : 'Sign in'}
+            <LogIn className="h-4 w-4" />
+            {login.isPending ? 'Authenticating…' : 'Sign in to Workspace'}
           </Button>
         </form>
 
-        <p className="text-center text-stone-400 text-xs">
+        <p className="text-center text-xs text-theme-muted">
           Don&apos;t have an account?{' '}
-          <Link href="/register" className="text-sunset-amber hover:underline font-semibold transition-colors">
-            Create an account
+          <Link
+            href="/register"
+            className="font-bold text-theme-accent hover:underline"
+          >
+            Create an organization account
           </Link>
         </p>
       </div>

@@ -27,15 +27,15 @@ export default function AdminAnalyticsPage() {
   if (isLoading) {
     return (
       <div className="space-y-6 pb-12">
-        <Skeleton className="h-10 w-72" />
+        <Skeleton className="h-10 w-72 bg-surface-subtle" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((n) => (
-            <Skeleton key={n} className="h-28 rounded-xl" />
+            <Skeleton key={n} className="h-28 rounded-xl bg-surface-subtle" />
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Skeleton className="h-72 rounded-xl" />
-          <Skeleton className="h-72 rounded-xl" />
+          <Skeleton className="h-72 rounded-xl bg-surface-subtle" />
+          <Skeleton className="h-72 rounded-xl bg-surface-subtle" />
         </div>
       </div>
     );
@@ -64,13 +64,13 @@ export default function AdminAnalyticsPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-sunset-cream flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sunset-orange to-sunset-crimson flex items-center justify-center shadow-md shadow-sunset-orange/20">
-              <BarChart3 className="h-4 w-4 text-sunset-cream" />
+          <h1 className="text-2xl font-bold tracking-tight text-theme-primary flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-theme-accent flex items-center justify-center text-white shadow-md shadow-black/10">
+              <BarChart3 className="h-4 w-4" />
             </div>
             Platform Analytics & Executive Insights
           </h1>
-          <p className="text-sm text-stone-400 mt-1">
+          <p className="text-sm text-theme-muted mt-1">
             Real-time pipeline metrics, scorecard distributions, and interview velocity across the organization.
           </p>
         </div>
@@ -80,61 +80,61 @@ export default function AdminAnalyticsPage() {
           size="sm"
           onClick={() => refetch()}
           disabled={isFetching}
-          className="border-[#36271D] bg-[#18110C] text-stone-300 hover:text-sunset-cream"
+          className="border-theme bg-card text-theme-primary hover:bg-surface-subtle"
         >
-          <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? 'animate-spin text-sunset-orange' : 'text-sunset-amber'}`} />
+          <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? 'animate-spin text-theme-accent' : 'text-theme-muted'}`} />
           Refresh Data
         </Button>
       </div>
 
       {/* Metric Cards Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
-        <div className="p-4 rounded-xl bg-[#18110C] border border-[#36271D] hover:border-sunset-orange/40 transition-colors space-y-1 shadow-lg">
-          <div className="flex items-center justify-between text-stone-400">
+        <div className="p-4 rounded-xl bg-card border border-theme hover:border-theme-accent/40 transition-colors space-y-1 shadow-sm">
+          <div className="flex items-center justify-between text-theme-muted">
             <span className="text-xs font-medium">Total Candidates</span>
-            <Users className="h-4 w-4 text-sunset-orange" />
+            <Users className="h-4 w-4 text-theme-accent" />
           </div>
-          <p className="text-2xl font-bold text-sunset-cream font-mono">
+          <p className="text-2xl font-bold text-theme-primary font-mono">
             {analytics.totalCandidates}
           </p>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#18110C] border border-[#36271D] hover:border-sunset-orange/40 transition-colors space-y-1 shadow-lg">
-          <div className="flex items-center justify-between text-stone-400">
+        <div className="p-4 rounded-xl bg-card border border-theme hover:border-theme-accent/40 transition-colors space-y-1 shadow-sm">
+          <div className="flex items-center justify-between text-theme-muted">
             <span className="text-xs font-medium">Interviews Conducted</span>
-            <Calendar className="h-4 w-4 text-sunset-amber" />
+            <Calendar className="h-4 w-4 text-theme-accent" />
           </div>
-          <p className="text-2xl font-bold text-sunset-amber font-mono">
+          <p className="text-2xl font-bold text-theme-primary font-mono">
             {analytics.totalInterviews}
           </p>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#18110C] border border-[#36271D] hover:border-sunset-orange/40 transition-colors space-y-1 shadow-lg">
-          <div className="flex items-center justify-between text-stone-400">
+        <div className="p-4 rounded-xl bg-card border border-theme hover:border-theme-accent/40 transition-colors space-y-1 shadow-sm">
+          <div className="flex items-center justify-between text-theme-muted">
             <span className="text-xs font-medium">Average Rating</span>
-            <Star className="h-4 w-4 text-sunset-amber fill-sunset-amber" />
+            <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
           </div>
-          <p className="text-2xl font-bold text-sunset-cream font-mono">
+          <p className="text-2xl font-bold text-theme-primary font-mono">
             {analytics.averageScore ? `${analytics.averageScore} / 5` : 'N/A'}
           </p>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#18110C] border border-[#36271D] hover:border-sunset-orange/40 transition-colors space-y-1 shadow-lg">
-          <div className="flex items-center justify-between text-stone-400">
+        <div className="p-4 rounded-xl bg-card border border-theme hover:border-theme-accent/40 transition-colors space-y-1 shadow-sm">
+          <div className="flex items-center justify-between text-theme-muted">
             <span className="text-xs font-medium">Interviewer Pool</span>
-            <UserCheck className="h-4 w-4 text-emerald-400" />
+            <UserCheck className="h-4 w-4 text-emerald-500" />
           </div>
-          <p className="text-2xl font-bold text-emerald-400 font-mono">
+          <p className="text-2xl font-bold text-theme-primary font-mono">
             {analytics.totalInterviewers}
           </p>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#18110C] border border-[#36271D] hover:border-sunset-orange/40 transition-colors space-y-1 shadow-lg">
-          <div className="flex items-center justify-between text-stone-400">
+        <div className="p-4 rounded-xl bg-card border border-theme hover:border-theme-accent/40 transition-colors space-y-1 shadow-sm">
+          <div className="flex items-center justify-between text-theme-muted">
             <span className="text-xs font-medium">Organizations</span>
-            <Building2 className="h-4 w-4 text-blue-400" />
+            <Building2 className="h-4 w-4 text-blue-500" />
           </div>
-          <p className="text-2xl font-bold text-blue-400 font-mono">
+          <p className="text-2xl font-bold text-theme-primary font-mono">
             {analytics.totalCompanies}
           </p>
         </div>
@@ -143,20 +143,20 @@ export default function AdminAnalyticsPage() {
       {/* Charts / Distribution Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Candidate Pipeline Distribution */}
-        <section className="p-5 rounded-2xl bg-[#18110C] border border-[#36271D] space-y-4 shadow-xl">
+        <section className="p-5 rounded-2xl bg-card border border-theme space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-sunset-cream flex items-center gap-2">
-              <Users className="h-4 w-4 text-sunset-orange" />
+            <h2 className="text-sm font-bold text-theme-primary flex items-center gap-2">
+              <Users className="h-4 w-4 text-theme-accent" />
               Candidate Pipeline
             </h2>
-            <span className="text-xs text-stone-400 font-mono">
+            <span className="text-xs text-theme-muted font-mono">
               {analytics.totalCandidates} Total
             </span>
           </div>
 
           <div className="space-y-2.5">
             {analytics.candidateStatusDistribution.length === 0 ? (
-              <p className="text-xs text-stone-500 py-6 text-center">No candidate stage data</p>
+              <p className="text-xs text-theme-muted py-6 text-center">No candidate stage data</p>
             ) : (
               analytics.candidateStatusDistribution.map((item) => {
                 const pct = analytics.totalCandidates
@@ -165,16 +165,16 @@ export default function AdminAnalyticsPage() {
                 return (
                   <div key={item.status} className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-stone-300 capitalize font-medium">
+                      <span className="text-theme-primary capitalize font-medium">
                         {item.status.toLowerCase().replace('_', ' ')}
                       </span>
-                      <span className="text-stone-400 font-mono">
+                      <span className="text-theme-muted font-mono">
                         {item.count} ({pct}%)
                       </span>
                     </div>
-                    <div className="h-2 rounded-full bg-[#120B07] overflow-hidden">
+                    <div className="h-2 rounded-full bg-surface-subtle overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-sunset-orange to-sunset-amber"
+                        className="h-full rounded-full bg-theme-accent"
                         style={{ width: `${Math.max(pct, 4)}%` }}
                       />
                     </div>
@@ -186,20 +186,20 @@ export default function AdminAnalyticsPage() {
         </section>
 
         {/* Hiring Recommendations */}
-        <section className="p-5 rounded-2xl bg-[#18110C] border border-[#36271D] space-y-4 shadow-xl">
+        <section className="p-5 rounded-2xl bg-card border border-theme space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-sunset-cream flex items-center gap-2">
-              <Award className="h-4 w-4 text-sunset-amber" />
+            <h2 className="text-sm font-bold text-theme-primary flex items-center gap-2">
+              <Award className="h-4 w-4 text-theme-accent" />
               Scorecard Recommendations
             </h2>
-            <span className="text-xs text-stone-400 font-mono">
+            <span className="text-xs text-theme-muted font-mono">
               {totalRecs} Evaluated
             </span>
           </div>
 
           <div className="space-y-2.5">
             {Object.keys(analytics.recommendationDistribution).length === 0 ? (
-              <p className="text-xs text-stone-500 py-6 text-center">No feedback submitted yet</p>
+              <p className="text-xs text-theme-muted py-6 text-center">No feedback submitted yet</p>
             ) : (
               Object.entries(analytics.recommendationDistribution).map(([rec, count]) => {
                 const pct = totalRecs ? Math.round((count / totalRecs) * 100) : 0;
@@ -209,21 +209,21 @@ export default function AdminAnalyticsPage() {
                 return (
                   <div key={rec} className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-stone-300 font-medium capitalize">
+                      <span className="text-theme-primary font-medium capitalize">
                         {rec.replace('_', ' ')}
                       </span>
-                      <span className="text-stone-400 font-mono">
+                      <span className="text-theme-muted font-mono">
                         {count} ({pct}%)
                       </span>
                     </div>
-                    <div className="h-2 rounded-full bg-[#120B07] overflow-hidden">
+                    <div className="h-2 rounded-full bg-surface-subtle overflow-hidden">
                       <div
                         className={`h-full rounded-full ${
                           isHire
                             ? 'bg-emerald-500'
                             : isReject
-                            ? 'bg-sunset-crimson'
-                            : 'bg-sunset-amber'
+                            ? 'bg-rose-500'
+                            : 'bg-amber-500'
                         }`}
                         style={{ width: `${Math.max(pct, 4)}%` }}
                       />
@@ -236,20 +236,20 @@ export default function AdminAnalyticsPage() {
         </section>
 
         {/* Interview Status Breakdown */}
-        <section className="p-5 rounded-2xl bg-[#18110C] border border-[#36271D] space-y-4 shadow-xl">
+        <section className="p-5 rounded-2xl bg-card border border-theme space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-sunset-cream flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-emerald-400" />
+            <h2 className="text-sm font-bold text-theme-primary flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-theme-accent" />
               Interview Statuses
             </h2>
-            <span className="text-xs text-stone-400 font-mono">
+            <span className="text-xs text-theme-muted font-mono">
               {analytics.totalInterviews} Total
             </span>
           </div>
 
           <div className="space-y-2.5">
             {analytics.interviewStatusDistribution.length === 0 ? (
-              <p className="text-xs text-stone-500 py-6 text-center">No interview data yet</p>
+              <p className="text-xs text-theme-muted py-6 text-center">No interview data yet</p>
             ) : (
               analytics.interviewStatusDistribution.map((item) => {
                 const pct = analytics.totalInterviews
@@ -259,16 +259,16 @@ export default function AdminAnalyticsPage() {
                 return (
                   <div key={item.status} className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-stone-300 font-medium capitalize">
+                      <span className="text-theme-primary font-medium capitalize">
                         {item.status.toLowerCase().replace('_', ' ')}
                       </span>
-                      <span className="text-stone-400 font-mono">
+                      <span className="text-theme-muted font-mono">
                         {item.count} ({pct}%)
                       </span>
                     </div>
-                    <div className="h-2 rounded-full bg-[#120B07] overflow-hidden">
+                    <div className="h-2 rounded-full bg-surface-subtle overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400"
+                        className="h-full rounded-full bg-theme-accent"
                         style={{ width: `${Math.max(pct, 4)}%` }}
                       />
                     </div>
@@ -282,10 +282,10 @@ export default function AdminAnalyticsPage() {
 
       {/* 30-Day Activity Timeline Table */}
       {analytics.timeline && analytics.timeline.length > 0 && (
-        <section className="p-6 rounded-2xl bg-[#18110C] border border-[#36271D] space-y-4 shadow-xl">
+        <section className="p-6 rounded-2xl bg-card border border-theme space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-sunset-cream flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-sunset-orange" />
+            <h2 className="text-sm font-bold text-theme-primary flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-theme-accent" />
               Recent 30-Day Interview Velocity
             </h2>
           </div>
@@ -294,15 +294,15 @@ export default function AdminAnalyticsPage() {
             {analytics.timeline.slice(-12).map((day) => (
               <div
                 key={day.date}
-                className="p-3 rounded-xl bg-[#120B07] border border-[#36271D] text-center space-y-1"
+                className="p-3 rounded-xl bg-surface border border-theme text-center space-y-1"
               >
-                <span className="text-[10px] text-stone-500 font-mono block">
+                <span className="text-[10px] text-theme-muted font-mono block">
                   {day.date}
                 </span>
-                <p className="text-base font-bold text-sunset-cream font-mono">
-                  {day.total} <span className="text-xs font-normal text-stone-400">total</span>
+                <p className="text-base font-bold text-theme-primary font-mono">
+                  {day.total} <span className="text-xs font-normal text-theme-muted">total</span>
                 </p>
-                <p className="text-[11px] text-emerald-400 font-mono">
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono">
                   {day.completed} completed
                 </p>
               </div>

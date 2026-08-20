@@ -76,13 +76,13 @@ export default function InterviewsPage() {
       {/* Page Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-sunset-cream flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sunset-orange to-sunset-crimson flex items-center justify-center shadow-md shadow-sunset-orange/20">
-              <Building2 className="h-4 w-4 text-sunset-cream" />
+          <h1 className="text-2xl font-bold tracking-tight text-theme-primary flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-theme-accent flex items-center justify-center shadow-md shadow-black/10">
+              <Building2 className="h-4 w-4 text-white" />
             </div>
             Company Interview Records Hub
           </h1>
-          <p className="text-sm text-stone-400 mt-1">
+          <p className="text-sm text-theme-muted mt-1">
             Centralized ledger for all scheduled technical interviews, live notes, round progressions, and feedback scorecards.
           </p>
         </div>
@@ -93,9 +93,9 @@ export default function InterviewsPage() {
             size="sm"
             onClick={handleRefresh}
             disabled={isFetching}
-            className="border-[#36271D] bg-[#18110C] text-stone-300 hover:text-sunset-cream hover:bg-[#251A13]"
+            className="border-theme bg-card text-theme-primary hover:bg-surface-subtle"
           >
-            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? 'animate-spin text-sunset-orange' : 'text-sunset-amber'}`} />
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? 'animate-spin text-theme-accent' : 'text-theme-muted'}`} />
             Refresh
           </Button>
 
@@ -105,7 +105,7 @@ export default function InterviewsPage() {
               setScheduleCandidateId(undefined);
               setIsScheduleModalOpen(true);
             }}
-            className="gradient-sunset-btn text-xs font-semibold gap-1.5"
+            className="gradient-theme-btn text-xs font-semibold gap-1.5"
           >
             <Plus className="h-4 w-4" /> Schedule Interview
           </Button>
@@ -114,44 +114,44 @@ export default function InterviewsPage() {
 
       {/* Metric Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
-        <div className="p-4 rounded-xl bg-[#18110C]/90 border border-[#36271D] hover:border-sunset-orange/40 transition-colors space-y-1 shadow-lg">
-          <div className="flex items-center justify-between text-stone-400">
+        <div className="p-4 rounded-xl bg-card border border-theme hover:border-theme-accent/40 transition-colors space-y-1 shadow-sm">
+          <div className="flex items-center justify-between text-theme-muted">
             <span className="text-xs font-medium">Total Records</span>
-            <Calendar className="h-4 w-4 text-sunset-amber" />
+            <Calendar className="h-4 w-4 text-theme-accent" />
           </div>
-          <p className="text-2xl font-bold text-sunset-cream font-mono">{totalCount}</p>
+          <p className="text-2xl font-bold text-theme-primary font-mono">{totalCount}</p>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#18110C]/90 border border-[#36271D] hover:border-sunset-orange/40 transition-colors space-y-1 shadow-lg">
-          <div className="flex items-center justify-between text-stone-400">
+        <div className="p-4 rounded-xl bg-card border border-theme hover:border-theme-accent/40 transition-colors space-y-1 shadow-sm">
+          <div className="flex items-center justify-between text-theme-muted">
             <span className="text-xs font-medium">Scheduled</span>
-            <Clock className="h-4 w-4 text-sunset-amber" />
+            <Clock className="h-4 w-4 text-theme-accent" />
           </div>
-          <p className="text-2xl font-bold text-sunset-amber font-mono">{scheduledCount}</p>
+          <p className="text-2xl font-bold text-theme-primary font-mono">{scheduledCount}</p>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#18110C]/90 border border-[#36271D] hover:border-sunset-orange/40 transition-colors space-y-1 shadow-lg">
-          <div className="flex items-center justify-between text-stone-400">
+        <div className="p-4 rounded-xl bg-card border border-theme hover:border-theme-accent/40 transition-colors space-y-1 shadow-sm">
+          <div className="flex items-center justify-between text-theme-muted">
             <span className="text-xs font-medium">Live Now</span>
-            <PlayCircle className="h-4 w-4 text-sunset-orange animate-pulse" />
+            <PlayCircle className="h-4 w-4 text-theme-accent animate-pulse" />
           </div>
-          <p className="text-2xl font-bold text-sunset-orange font-mono">{liveCount}</p>
+          <p className="text-2xl font-bold text-theme-primary font-mono">{liveCount}</p>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#18110C]/90 border border-[#36271D] hover:border-sunset-orange/40 transition-colors space-y-1 shadow-lg">
-          <div className="flex items-center justify-between text-stone-400">
+        <div className="p-4 rounded-xl bg-card border border-theme hover:border-theme-accent/40 transition-colors space-y-1 shadow-sm">
+          <div className="flex items-center justify-between text-theme-muted">
             <span className="text-xs font-medium">Completed</span>
-            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
           </div>
-          <p className="text-2xl font-bold text-emerald-400 font-mono">{completedCount}</p>
+          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">{completedCount}</p>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#18110C]/90 border border-[#36271D] hover:border-sunset-orange/40 transition-colors space-y-1 shadow-lg">
-          <div className="flex items-center justify-between text-stone-400">
+        <div className="p-4 rounded-xl bg-card border border-theme hover:border-theme-accent/40 transition-colors space-y-1 shadow-sm">
+          <div className="flex items-center justify-between text-theme-muted">
             <span className="text-xs font-medium">Pending Feedback</span>
-            <Award className="h-4 w-4 text-sunset-crimson" />
+            <Award className="h-4 w-4 text-rose-500" />
           </div>
-          <p className="text-2xl font-bold text-sunset-crimson font-mono">{pendingFeedbackCount}</p>
+          <p className="text-2xl font-bold text-rose-600 dark:text-rose-400 font-mono">{pendingFeedbackCount}</p>
         </div>
       </div>
 
