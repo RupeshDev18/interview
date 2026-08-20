@@ -20,16 +20,18 @@ import {
   AlertCircle,
   ThumbsUp,
   ThumbsDown,
+  Eye,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { interviewsService } from '@/services/interviews.service';
-import type {
-  InterviewDto,
-  InterviewQuestionDto,
-  InterviewStatus,
+import {
+  ParticipantRole,
+  type InterviewDto,
+  type InterviewQuestionDto,
+  type InterviewStatus,
 } from '@intvwplt/shared';
 
 interface InterviewDetailDrawerProps {
@@ -66,6 +68,9 @@ export function InterviewDetailDrawer({
   const [copiedLink, setCopiedLink] = useState(false);
   const [candidateLinkBusy, setCandidateLinkBusy] = useState(false);
   const [candidateLinkCopied, setCandidateLinkCopied] = useState(false);
+
+  const [guestLinkBusy, setGuestLinkBusy] = useState(false);
+  const [guestLinkCopied, setGuestLinkCopied] = useState(false);
 
   useEffect(() => {
     if (!interviewId) return;
@@ -177,6 +182,24 @@ export function InterviewDetailDrawer({
     }
   };
 
+  const handleCopyGuestLink = async (role: ParticipantRole = ParticipantRole.HR_OBSERVER) => {
+    if (!interview) return;
+    setGuestLinkBusy(true);
+    try {
+      const res = await interviewsService.createGuestLink(interview.id, {
+        role,
+        guestName: role === ParticipantRole.HR_OBSERVER ? 'HR Observer' : 'Co-Interviewer',
+      });
+      await navigator.clipboard.writeText(res.guestJoinUrl);
+      setGuestLinkCopied(true);
+      setTimeout(() => setGuestLinkCopied(false), 2500);
+    } catch (error) {
+      console.error('Failed to create guest link:', error);
+    } finally {
+      setGuestLinkBusy(false);
+    }
+  };
+
   if (!interviewId) return null;
 
   return (
@@ -246,7 +269,7 @@ export function InterviewDetailDrawer({
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
               size="sm"
               variant="outline"
@@ -254,7 +277,7 @@ export function InterviewDetailDrawer({
               className="h-7 text-xs border-theme text-theme-primary hover:bg-surface-subtle bg-surface"
             >
               {copiedLink ? <Check className="h-3.5 w-3.5 text-emerald-500 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1 text-theme-accent" />}
-              {copiedLink ? 'Link Copied' : 'Copy Room Link'}
+              {copiedLink ? 'Room Copied' : 'Room Link'}
             </Button>
 
             <Button
@@ -264,8 +287,19 @@ export function InterviewDetailDrawer({
               disabled={candidateLinkBusy}
               className="h-7 text-xs border-theme text-theme-primary hover:bg-surface-subtle bg-surface"
             >
-              {candidateLinkCopied ? <Check className="h-3.5 w-3.5 text-emerald-500 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1 text-theme-accent" />}
-              {candidateLinkCopied ? 'Candidate Link Copied' : candidateLinkBusy ? 'Generating…' : 'Copy Candidate Link'}
+              {candidateLinkCopied ? <Check className="h-3.5 w-3.5 text-emerald-500 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1 text-amber-500" />}
+              {candidateLinkCopied ? 'Candidate Link Copied' : candidateLinkBusy ? 'Generating…' : 'Candidate Link'}
+            </Button>
+
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleCopyGuestLink(ParticipantRole.HR_OBSERVER)}
+              disabled={guestLinkBusy}
+              className="h-7 text-xs border-theme text-theme-primary hover:bg-surface-subtle bg-surface"
+            >
+              {guestLinkCopied ? <Check className="h-3.5 w-3.5 text-emerald-500 mr-1" /> : <Eye className="h-3.5 w-3.5 mr-1 text-purple-500" />}
+              {guestLinkCopied ? 'HR Link Copied' : guestLinkBusy ? 'Generating…' : 'HR/Guest Link'}
             </Button>
 
             {interview && (

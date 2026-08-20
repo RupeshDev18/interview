@@ -40,6 +40,7 @@ export function useRegister() {
         password: values.password,
         firstName: values.firstName,
         lastName: values.lastName,
+        companyName: values.companyName || undefined,
         phone: values.phone,
         companyId: values.companyId,
         role: values.role,
@@ -47,14 +48,14 @@ export function useRegister() {
     onSuccess: () => {
       router.push('/login?registered=true');
       toast({
-        title: 'Account created',
-        description: 'Please log in with your new credentials.',
+        title: 'Account created successfully',
+        description: 'Please sign in with your new credentials.',
       });
     },
     onError: (error: { response?: { data?: { error?: { message?: string } } } }) => {
       toast({
         title: 'Registration failed',
-        description: error.response?.data?.error?.message ?? 'Please try again.',
+        description: error.response?.data?.error?.message ?? 'Please check your information and try again.',
         variant: 'destructive',
       });
     },

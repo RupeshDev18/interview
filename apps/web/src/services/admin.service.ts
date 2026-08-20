@@ -65,6 +65,23 @@ export const adminService = {
     return response.data.data;
   },
 
+  async onboardCompany(data: {
+    companyName: string;
+    companyEmail?: string;
+    website?: string;
+    phone?: string;
+    adminFirstName: string;
+    adminLastName: string;
+    adminEmail: string;
+    adminPassword?: string;
+  }) {
+    const response = await apiClient.post<ApiSuccessResponse<{ company: CompanyItem; adminUser: UserItem }>>(
+      '/companies/onboard',
+      data,
+    );
+    return response.data.data;
+  },
+
   async updateCompany(id: string, data: Partial<CompanyItem>) {
     const response = await apiClient.patch<ApiSuccessResponse<CompanyItem>>(`/companies/${id}`, data);
     return response.data.data;

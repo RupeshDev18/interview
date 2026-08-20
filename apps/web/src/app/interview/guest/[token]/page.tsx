@@ -11,29 +11,35 @@ import {
   PhoneOff,
   Calendar,
   Clock,
-  Building2,
   User,
   ShieldCheck,
   AlertCircle,
   Sparkles,
   Wifi,
   WifiOff,
+  Eye,
+  FileText,
+  Users,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { interviewsService } from '@/services/interviews.service';
 import { useWebRtcRoom } from '@/hooks/use-webrtc-room';
 import { VideoGrid } from '@/components/interview/VideoGrid';
-import type { CandidateJoinDetailsDto } from '@intvwplt/shared';
+import type { GuestJoinDetailsDto } from '@intvwplt/shared';
 
-export default function CandidateJoinPage() {
+export default function GuestJoinPage() {
   const { token } = useParams<{ token: string }>();
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [interviewData, setInterviewData] = useState<CandidateJoinDetailsDto | null>(null);
+  const [interviewData, setInterviewData] = useState<GuestJoinDetailsDto | null>(null);
+  const [guestName, setGuestName] = useState('HR Observer');
   const [hasJoinedLobby, setHasJoinedLobby] = useState(false);
   const [isCallEnded, setIsCallEnded] = useState(false);
 
@@ -43,34 +49,41 @@ export default function CandidateJoinPage() {
   const [previewMic, setPreviewMic] = useState(true);
   const [previewCam, setPreviewCam] = useState(true);
 
+  // Guest Observer private scratchpad
+  const [observerNotes, setObserverNotes] = useState('');
+  const [copiedNotes, setCopiedNotes] = useState(false);
+
   // Call timer
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
-  // Fetch interview details by candidate token
+  // Fetch interview details by guest token
   useEffect(() => {
     if (!token) return;
 
-    async function loadCandidateInterview() {
+    async function loadGuestInterview() {
       setIsLoading(true);
       setError(null);
       try {
-        const data = await interviewsService.getCandidateJoinDetails(token);
+        const data = await interviewsService.getGuestJoinDetails(token);
         setInterviewData(data);
+        if (data.guestName) {
+          setGuestName(data.guestName);
+        }
       } catch (err: any) {
-        console.error('Candidate link validation failed:', err);
+        console.error('Guest link validation failed:', err);
         setError(
           err?.response?.data?.error?.message ||
-            'This interview link is invalid or has expired. Please contact your recruiter.',
+            'This guest invitation link is invalid or has expired. Please request a new invite.',
         );
       } finally {
         setIsLoading(false);
       }
     }
 
-    loadCandidateInterview();
+    loadGuestInterview();
   }, [token]);
 
-  // Handle pre-join webcam preview
+  // Pre-join webcam preview
   useEffect(() => {
     if (!interviewData || hasJoinedLobby) return;
 
@@ -99,7 +112,6 @@ export default function CandidateJoinPage() {
     };
   }, [interviewData, hasJoinedLobby]);
 
-  // Toggle preview mic/cam
   const togglePreviewMic = () => {
     if (previewStream) {
       previewStream.getAudioTracks().forEach((t) => {
@@ -118,7 +130,7 @@ export default function CandidateJoinPage() {
     }
   };
 
-  // WebRTC room hook for multi-peer mesh call
+  // Multi-Peer WebRTC room hook
   const {
     status,
     participants,
@@ -133,7 +145,7 @@ export default function CandidateJoinPage() {
     disconnect,
   } = useWebRtcRoom({
     meetingRoomId: interviewData?.meetingRoomId || '',
-    candidateToken: token,
+    guestToken: token,
     autoConnect: hasJoinedLobby,
   });
 
@@ -159,6 +171,12 @@ export default function CandidateJoinPage() {
   const handleEndCall = () => {
     disconnect();
     setIsCallEnded(true);
+  };
+
+  const handleCopyNotes = () => {
+    navigator.clipboard.writeText(observerNotes);
+    setCopiedNotes(true);
+    setTimeout(() => setCopiedNotes(false), 2000);
   };
 
   const formatTimer = (seconds: number) => {
@@ -188,7 +206,7 @@ export default function CandidateJoinPage() {
           <div className="w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-500 mx-auto flex items-center justify-center">
             <AlertCircle className="h-7 w-7" />
           </div>
-          <h1 className="text-xl font-bold text-theme-primary">Interview Link Invalid</h1>
+          <h1 className="text-xl font-bold text-theme-primary">Guest Invite Link Invalid</h1>
           <p className="text-sm text-theme-muted leading-relaxed">{error}</p>
         </div>
       </div>
@@ -204,14 +222,14 @@ export default function CandidateJoinPage() {
             <Sparkles className="h-8 w-8" />
           </div>
           <div className="space-y-1.5">
-            <h1 className="text-xl font-bold text-theme-primary">Interview Finished</h1>
+            <h1 className="text-xl font-bold text-theme-primary">Observer Session Concluded</h1>
             <p className="text-sm text-theme-muted">
-              Thank you for attending your interview with{' '}
+              Thank you for attending the interview with{' '}
               <span className="text-theme-primary font-semibold">{interviewData.company.name}</span>.
             </p>
           </div>
           <div className="p-4 rounded-xl bg-surface-subtle border border-theme text-xs text-theme-muted space-y-1">
-            <p>Duration: {formatTimer(elapsedSeconds)}</p>
+            <p>Session Duration: {formatTimer(elapsedSeconds)}</p>
             <p>You may now close this browser window safely.</p>
           </div>
         </div>
@@ -219,34 +237,34 @@ export default function CandidateJoinPage() {
     );
   }
 
-  // 4. Pre-Join Screen (Lobby)
+  // 4. Pre-Join Lobby
   if (!hasJoinedLobby) {
     return (
       <div className="min-h-screen bg-theme-bg flex flex-col justify-between p-6 text-theme-primary">
         {/* Header */}
         <header className="max-w-5xl mx-auto w-full flex items-center justify-between py-2 border-b border-theme">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-theme-accent flex items-center justify-center text-white font-bold text-sm shadow-md shadow-black/10">
-              {interviewData.company.name.charAt(0)}
+            <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md shadow-black/10">
+              <Eye className="h-4 w-4" />
             </div>
             <div>
               <span className="text-sm font-bold text-theme-primary">
                 {interviewData.company.name}
               </span>
               <span className="text-xs text-theme-muted ml-2 font-mono">
-                Candidate Interview Portal
+                HR & Guest Observer Portal
               </span>
             </div>
           </div>
 
-          <Badge variant="outline" className="text-xs border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">
-            <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Secure Session
+          <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-600 dark:text-purple-300 bg-purple-500/10">
+            <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Observer Mode
           </Badge>
         </header>
 
-        {/* Center Lobby Content */}
+        {/* Center Lobby */}
         <main className="max-w-4xl mx-auto w-full my-auto py-8 grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-          {/* Left Preview Box */}
+          {/* Left: Camera Preview */}
           <div className="md:col-span-7 space-y-4">
             <div className="relative aspect-video rounded-2xl bg-black border border-theme overflow-hidden shadow-md flex items-center justify-center">
               <video
@@ -266,7 +284,7 @@ export default function CandidateJoinPage() {
                 </div>
               )}
 
-              {/* In-preview Floating Controls */}
+              {/* Floating Controls */}
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-lg">
                 <button
                   type="button"
@@ -296,31 +314,41 @@ export default function CandidateJoinPage() {
               </div>
             </div>
             <p className="text-center text-xs text-theme-muted">
-              Check your lighting, camera position, and microphone before entering.
+              Check your camera and microphone settings before joining the panel.
             </p>
           </div>
 
-          {/* Right Details & Join Card */}
+          {/* Right: Join Info Form */}
           <div className="md:col-span-5 space-y-6">
             <div className="p-6 rounded-2xl bg-card border border-theme space-y-5 shadow-sm">
               <div>
-                <span className="text-[11px] font-semibold text-theme-accent uppercase tracking-wider font-mono">
-                  Welcome, {interviewData.candidate.firstName}!
+                <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-300 uppercase tracking-wider font-mono">
+                  {interviewData.role.replace('_', ' ')} Invitation
                 </span>
                 <h2 className="text-xl font-bold text-theme-primary mt-1">
                   {interviewData.interviewType.name}
                 </h2>
               </div>
 
-              <div className="space-y-3 text-xs text-theme-muted">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-theme-primary">Your Display Name</label>
+                <Input
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  placeholder="e.g. Sarah Connor (HR)"
+                  className="bg-surface border-theme text-theme-primary text-xs"
+                />
+              </div>
+
+              <div className="space-y-3 text-xs text-theme-muted pt-1 border-t border-theme">
                 <div className="flex items-center gap-2.5">
                   <User className="h-4 w-4 text-theme-accent shrink-0" />
-                  <span>Interviewer: <strong className="text-theme-primary">{interviewData.interviewerName}</strong></span>
+                  <span>Candidate: <strong className="text-theme-primary">{interviewData.candidate.firstName} {interviewData.candidate.lastName}</strong></span>
                 </div>
 
                 <div className="flex items-center gap-2.5">
-                  <Clock className="h-4 w-4 text-theme-accent shrink-0" />
-                  <span>Duration: <strong className="text-theme-primary">{interviewData.interviewType.durationMinutes} minutes</strong></span>
+                  <ShieldCheck className="h-4 w-4 text-theme-accent shrink-0" />
+                  <span>Lead Interviewer: <strong className="text-theme-primary">{interviewData.interviewerName}</strong></span>
                 </div>
 
                 <div className="flex items-center gap-2.5">
@@ -336,7 +364,7 @@ export default function CandidateJoinPage() {
                   onClick={handleJoinCall}
                   className="w-full h-11 text-sm gradient-theme-btn font-bold rounded-xl shadow-md"
                 >
-                  Join Interview Room
+                  Join Panel Interview
                 </Button>
               </div>
             </div>
@@ -345,83 +373,142 @@ export default function CandidateJoinPage() {
 
         {/* Footer */}
         <footer className="text-center text-xs text-theme-muted py-3">
-          Powered by InterviewOS • No downloads or account required
+          Powered by InterviewOS • Panel & Observer Mode
         </footer>
       </div>
     );
   }
 
-  // 5. In-Meeting Video Room
+  // 5. In-Meeting Video Room (Observer / Guest View)
   return (
     <div className="min-h-screen bg-theme-bg flex flex-col text-theme-primary">
-      {/* Meeting Top Bar */}
+      {/* Top Bar */}
       <header className="px-6 py-3 bg-surface border-b border-theme flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-theme-accent flex items-center justify-center text-white font-bold text-xs shadow-md">
-            {interviewData.company.name.charAt(0)}
+          <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-md">
+            <Eye className="h-4 w-4" />
           </div>
           <div>
             <h1 className="text-sm font-bold text-theme-primary leading-none">
               {interviewData.interviewType.name}
             </h1>
             <p className="text-[11px] text-theme-muted font-mono mt-1">
-              {interviewData.company.name} • {interviewData.interviewerName}
+              Candidate: {interviewData.candidate.firstName} {interviewData.candidate.lastName} • Lead: {interviewData.interviewerName}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Connection status badge */}
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-subtle border border-theme text-xs">
+          <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-600 dark:text-purple-300 bg-purple-500/10 font-mono">
+            {interviewData.role.replace('_', ' ')}
+          </Badge>
+
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-subtle border border-theme text-xs font-mono">
             {status === 'connected' ? (
               <>
                 <Wifi className="h-3.5 w-3.5 text-emerald-500" />
-                <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">
-                  Live ({1 + participants.length} online)
-                </span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">Connected ({1 + participants.length} online)</span>
               </>
             ) : status === 'connecting' ? (
               <>
                 <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
-                <span className="text-amber-600 dark:text-amber-400 font-mono">Connecting...</span>
+                <span className="text-amber-600 dark:text-amber-400">Connecting...</span>
               </>
             ) : (
               <>
                 <WifiOff className="h-3.5 w-3.5 text-theme-muted" />
-                <span className="text-theme-muted font-mono">Waiting for interviewers</span>
+                <span className="text-theme-muted">Waiting</span>
               </>
             )}
           </div>
 
-          {/* Call Elapsed Timer */}
           <div className="px-3 py-1 rounded-full bg-surface-subtle border border-theme text-xs font-mono text-theme-primary font-bold">
             {formatTimer(elapsedSeconds)}
           </div>
         </div>
       </header>
 
-      {/* Main Video Stage */}
-      <main className="flex-1 p-6 flex flex-col items-center justify-center space-y-4">
-        {permissionError && (
-          <div className="w-full max-w-5xl p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-300 text-xs flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
-            <span>{permissionError}</span>
-          </div>
-        )}
+      {/* Main Grid + Sidebar */}
+      <main className="flex-1 p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* Multi-Peer Video Grid */}
+        <div className="lg:col-span-2 space-y-4">
+          {permissionError && (
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-300 text-xs flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
+              <span>{permissionError}</span>
+            </div>
+          )}
 
-        <div className="w-full max-w-6xl flex-1 flex flex-col justify-center">
           <VideoGrid
             localVideoRef={localVideoRef}
-            localName={`${interviewData.candidate.firstName} ${interviewData.candidate.lastName}`}
-            localRole="CANDIDATE"
+            localName={`${guestName}`}
+            localRole={interviewData.role}
             isLocalMicOn={isMicOn}
             isLocalCameraOn={isCameraOn}
             isScreenSharing={isScreenSharing}
             participants={participants}
             status={status}
-            emptyWaitingMessage="Waiting for interviewers and panel to join..."
+            emptyWaitingMessage="Waiting for interviewers and candidate..."
           />
         </div>
+
+        {/* Right Sidebar: Observer Notes & Panel Roster */}
+        <aside className="space-y-4">
+          {/* Observer Scratchpad */}
+          <section className="rounded-xl border border-theme bg-card p-4 space-y-3 shadow-sm">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-sm text-theme-primary flex items-center gap-1.5">
+                <FileText className="h-4 w-4 text-theme-accent" />
+                Private Observer Notes
+              </h2>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleCopyNotes}
+                className="h-7 text-xs border-theme text-theme-primary hover:bg-surface-subtle bg-surface"
+              >
+                {copiedNotes ? <Check className="h-3.5 w-3.5 text-emerald-500 mr-1" /> : <Copy className="h-3.5 w-3.5 text-theme-accent mr-1" />}
+                {copiedNotes ? 'Copied' : 'Copy'}
+              </Button>
+            </div>
+
+            <textarea
+              value={observerNotes}
+              onChange={(e) => setObserverNotes(e.target.value)}
+              placeholder="Record your observations, cultural fit impressions, and HR remarks here..."
+              className="min-h-[220px] w-full rounded-lg bg-surface border border-theme p-3 text-xs text-theme-primary placeholder:text-theme-muted focus:outline-none focus:ring-1 focus:ring-theme-accent font-mono leading-relaxed resize-none"
+            />
+            <p className="text-[11px] text-theme-muted">
+              Notes taken here remain private and are not visible to the candidate.
+            </p>
+          </section>
+
+          {/* Active Participants List */}
+          <section className="rounded-xl border border-theme bg-card p-4 space-y-3 shadow-sm">
+            <h2 className="font-semibold text-xs text-theme-primary uppercase tracking-wider font-mono flex items-center gap-1.5">
+              <Users className="h-3.5 w-3.5 text-theme-accent" />
+              Room Roster ({1 + participants.length})
+            </h2>
+
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center justify-between p-2 rounded-lg bg-surface border border-theme">
+                <span className="font-medium text-theme-primary">{guestName} (You)</span>
+                <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-600 dark:text-purple-300 font-mono">
+                  {interviewData.role.replace('_', ' ')}
+                </Badge>
+              </div>
+
+              {participants.map((p) => (
+                <div key={p.socketId} className="flex items-center justify-between p-2 rounded-lg bg-surface-subtle border border-theme">
+                  <span className="font-medium text-theme-primary">{p.name}</span>
+                  <Badge variant="outline" className="text-[10px] border-theme font-mono">
+                    {p.role.replace('_', ' ')}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </section>
+        </aside>
       </main>
 
       {/* Floating Bottom Control Bar */}

@@ -2,6 +2,7 @@ import { feedbackRepository } from './feedback.repository';
 import { interviewsRepository } from '../interviews/interviews.repository';
 import { candidatesRepository } from '../candidates/candidates.repository';
 import { auditService } from '../audit/audit.service';
+import { prisma } from '../../lib/prisma';
 import { NotFoundError, AuthorizationError } from '../../utils/errors';
 import { AuditAction, InterviewStatus } from '@intvwplt/shared';
 import type { SubmitFeedbackInput } from './feedback.validator';
@@ -41,22 +42,35 @@ export const feedbackService = {
     }
 
     // Compute overall score from scores map if not provided
-    let calculatedScore = input.overallScore;
-    if (!calculatedScore && input.scores && Object.keys(input.scores).length > 0) {
+    let calculatedScore: number | undefined = input.overallScore ?? undefined;
+    if (calculatedScore === undefined && input.scores && Object.keys(input.scores).length > 0) {
       const values = Object.values(input.scores);
       const sum = values.reduce((acc, curr) => acc + curr, 0);
       calculatedScore = Math.round((sum / values.length) * 100) / 100;
     }
 
+    // Validate evaluationTemplateId foreign key if present
+    let validTemplateId: string | undefined = undefined;
+    const rawTemplateId = input.templateId || interview.interviewType?.evaluationTemplateId;
+    if (rawTemplateId) {
+      const templateExists = await prisma.evaluationTemplate.findUnique({
+        where: { id: rawTemplateId },
+        select: { id: true },
+      });
+      if (templateExists) {
+        validTemplateId = templateExists.id;
+      }
+    }
+
     const feedback = await feedbackRepository.upsert({
       interviewId,
       interviewerId: interview.interviewerId,
-      templateId: input.templateId || interview.interviewType?.evaluationTemplateId || undefined,
+      templateId: validTemplateId,
       scores: input.scores,
       overallScore: calculatedScore,
-      strengths: input.strengths,
-      weaknesses: input.weaknesses,
-      concerns: input.concerns,
+      strengths: input.strengths || undefined,
+      weaknesses: input.weaknesses || undefined,
+      concerns: input.concerns || undefined,
       recommendation: input.recommendation as any,
       submittedAt: new Date(),
     });

@@ -5,6 +5,13 @@ export enum UserRole {
   INTERVIEWER = 'INTERVIEWER',
 }
 
+export enum ParticipantRole {
+  LEAD_INTERVIEWER = 'LEAD_INTERVIEWER',
+  CO_INTERVIEWER = 'CO_INTERVIEWER',
+  HR_OBSERVER = 'HR_OBSERVER',
+  CANDIDATE = 'CANDIDATE',
+}
+
 export enum CandidateStatus {
   NEW = 'NEW',
   INTERVIEW_SCHEDULED = 'INTERVIEW_SCHEDULED',

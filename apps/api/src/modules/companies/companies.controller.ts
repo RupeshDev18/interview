@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { companiesService } from './companies.service';
 import { sendSuccess, sendCreated, sendNoContent } from '../../utils/response';
-import type { CreateCompanyInput, UpdateCompanyInput } from './companies.validator';
+import type { CreateCompanyInput, UpdateCompanyInput, OnboardCompanyInput } from './companies.validator';
 
 export const companiesController = {
   async list(req: Request, res: Response) {
@@ -24,6 +24,11 @@ export const companiesController = {
   async create(req: Request, res: Response) {
     const company = await companiesService.create(req.body as CreateCompanyInput);
     sendCreated(res, company, 'Company created successfully');
+  },
+
+  async onboard(req: Request, res: Response) {
+    const result = await companiesService.onboard(req.body as OnboardCompanyInput);
+    sendCreated(res, result, 'Organization onboarded successfully with admin user');
   },
 
   async update(req: Request, res: Response) {

@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { interviewersService } from './interviewers.service';
-import { sendSuccess } from '../../utils/response';
+import { sendSuccess, sendCreated } from '../../utils/response';
+import type { CreateInterviewerInput } from './interviewers.validator';
 
 export const interviewersController = {
   async list(req: Request, res: Response): Promise<void> {
@@ -31,5 +32,10 @@ export const interviewersController = {
   async getMine(req: Request, res: Response): Promise<void> {
     const interviewer = await interviewersService.getByUserId(req.user!.id);
     sendSuccess(res, interviewer);
+  },
+
+  async create(req: Request, res: Response): Promise<void> {
+    const interviewer = await interviewersService.create(req.body as CreateInterviewerInput, req.user!);
+    sendCreated(res, interviewer, 'Technical interviewer created successfully');
   },
 };

@@ -17,6 +17,10 @@ import {
   Check,
   Wifi,
   WifiOff,
+  Copy,
+  Users,
+  Eye,
+  ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,8 +30,10 @@ import { interviewsService } from '@/services/interviews.service';
 import { feedbackService } from '@/services/feedback.service';
 import { useAuthStore } from '@/stores/auth.store';
 import { useWebRtcRoom } from '@/hooks/use-webrtc-room';
+import { VideoGrid } from '@/components/interview/VideoGrid';
 import {
   Recommendation,
+  ParticipantRole,
   type InterviewDto,
   type InterviewQuestionDto,
 } from '@intvwplt/shared';
@@ -36,6 +42,7 @@ export default function InterviewRoomPage() {
   const router = useRouter();
   const { meetingRoomId } = useParams<{ meetingRoomId: string }>();
   const token = useAuthStore((s) => s.accessToken);
+  const currentUser = useAuthStore((s) => s.user);
 
   const [notes, setNotes] = useState('');
   const [scores, setScores] = useState<Record<string, number>>({});
@@ -43,6 +50,10 @@ export default function InterviewRoomPage() {
     Recommendation.HIRE,
   );
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  const [candidateLinkCopied, setCandidateLinkCopied] = useState(false);
+  const [guestLinkCopied, setGuestLinkCopied] = useState(false);
+  const [guestLinkBusy, setGuestLinkBusy] = useState(false);
 
   // Fetch interview details
   const room = useQuery({
@@ -58,15 +69,16 @@ export default function InterviewRoomPage() {
 
   const interview = room.data;
 
-  // WebRTC hook
+  // Multi-peer WebRTC hook
   const {
     status,
+    myParticipantInfo,
+    participants,
     isMicOn,
     isCameraOn,
     isScreenSharing,
     permissionError,
     localVideoRef,
-    remoteVideoRef,
     toggleMic,
     toggleCamera,
     toggleScreenShare,
@@ -105,6 +117,40 @@ export default function InterviewRoomPage() {
     },
   });
 
+  const handleCopyCandidateLink = async () => {
+    if (!interview) return;
+    try {
+      const { token } = await interviewsService.createCandidateLink(interview.id);
+      await navigator.clipboard.writeText(`${window.location.origin}/interview/join/${token}`);
+      setCandidateLinkCopied(true);
+      toast({ title: 'Candidate join link copied to clipboard' });
+      setTimeout(() => setCandidateLinkCopied(false), 2500);
+    } catch (error) {
+      toast({ title: 'Failed to create candidate link', variant: 'destructive' });
+    }
+  };
+
+  const handleCopyGuestLink = async (role: ParticipantRole = ParticipantRole.HR_OBSERVER) => {
+    if (!interview) return;
+    setGuestLinkBusy(true);
+    try {
+      const res = await interviewsService.createGuestLink(interview.id, {
+        role,
+        guestName: role === ParticipantRole.HR_OBSERVER ? 'HR Observer' : 'Co-Interviewer',
+      });
+      await navigator.clipboard.writeText(res.guestJoinUrl);
+      setGuestLinkCopied(true);
+      toast({
+        title: `${role === ParticipantRole.HR_OBSERVER ? 'HR Observer' : 'Co-Interviewer'} invite link copied`,
+      });
+      setTimeout(() => setGuestLinkCopied(false), 2500);
+    } catch (error) {
+      toast({ title: 'Failed to generate guest link', variant: 'destructive' });
+    } finally {
+      setGuestLinkBusy(false);
+    }
+  };
+
   const formatTimer = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -140,9 +186,13 @@ export default function InterviewRoomPage() {
     );
   }
 
+  const localName = currentUser
+    ? `${currentUser.firstName} ${currentUser.lastName}`
+    : 'Lead Interviewer';
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-12">
-      {/* Left Column: Video & Controls */}
+      {/* Left Column: Video Grid & Controls */}
       <main className="lg:col-span-2 space-y-4">
         {/* Meeting Header Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl bg-card border border-theme shadow-sm">
@@ -160,12 +210,43 @@ export default function InterviewRoomPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCopyCandidateLink}
+              className="h-7 text-xs border-theme text-theme-primary hover:bg-surface-subtle bg-surface"
+            >
+              {candidateLinkCopied ? (
+                <Check className="h-3 w-3 mr-1 text-emerald-500" />
+              ) : (
+                <Copy className="h-3 w-3 mr-1 text-amber-500" />
+              )}
+              {candidateLinkCopied ? 'Copied' : 'Candidate Link'}
+            </Button>
+
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleCopyGuestLink(ParticipantRole.HR_OBSERVER)}
+              disabled={guestLinkBusy}
+              className="h-7 text-xs border-theme text-theme-primary hover:bg-surface-subtle bg-surface"
+            >
+              {guestLinkCopied ? (
+                <Check className="h-3 w-3 mr-1 text-emerald-500" />
+              ) : (
+                <Eye className="h-3 w-3 mr-1 text-purple-500" />
+              )}
+              {guestLinkCopied ? 'Copied' : 'HR/Guest Link'}
+            </Button>
+
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface border border-theme text-xs font-mono">
               {status === 'connected' ? (
                 <>
                   <Wifi className="h-3.5 w-3.5 text-emerald-500" />
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">Connected</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                    {1 + participants.length} Online
+                  </span>
                 </>
               ) : status === 'connecting' ? (
                 <>
@@ -192,61 +273,18 @@ export default function InterviewRoomPage() {
           </div>
         )}
 
-        {/* Video Stage */}
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* Remote (Candidate) Video */}
-          <div className="relative aspect-video rounded-2xl bg-black border border-theme overflow-hidden shadow-md flex items-center justify-center">
-            <video
-              ref={remoteVideoRef}
-              autoPlay
-              playsInline
-              className="w-full h-full object-cover"
-            />
-
-            {status !== 'connected' && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-2 bg-black/80">
-                <div className="w-12 h-12 rounded-full bg-theme-accent/20 border border-theme-accent/30 text-white flex items-center justify-center">
-                  <User className="h-6 w-6" />
-                </div>
-                <p className="text-xs font-semibold text-white">
-                  Waiting for candidate to join
-                </p>
-                <p className="text-[11px] text-stone-300 max-w-xs">
-                  {interview.candidate.firstName} {interview.candidate.lastName} has not entered the room yet.
-                </p>
-              </div>
-            )}
-
-            {status === 'connected' && (
-              <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 text-xs font-medium text-white">
-                {interview.candidate.firstName} {interview.candidate.lastName} (Candidate)
-              </div>
-            )}
-          </div>
-
-          {/* Local (Interviewer) Video */}
-          <div className="relative aspect-video rounded-2xl bg-black border border-theme overflow-hidden shadow-md flex items-center justify-center">
-            <video
-              ref={localVideoRef}
-              autoPlay
-              muted
-              playsInline
-              className={`w-full h-full object-cover ${!isScreenSharing ? 'scale-x-[-1]' : ''} ${!isCameraOn ? 'hidden' : ''}`}
-            />
-
-            {!isCameraOn && (
-              <div className="text-center space-y-1 text-stone-400">
-                <VideoOff className="h-6 w-6 mx-auto" />
-                <p className="text-xs">Camera is off</p>
-              </div>
-            )}
-
-            <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 text-xs font-medium text-white flex items-center gap-2">
-              <span>You (Interviewer)</span>
-              {!isMicOn && <MicOff className="h-3.5 w-3.5 text-rose-400" />}
-            </div>
-          </div>
-        </div>
+        {/* Dynamic Multi-Peer Video Grid */}
+        <VideoGrid
+          localVideoRef={localVideoRef}
+          localName={localName}
+          localRole="LEAD_INTERVIEWER"
+          isLocalMicOn={isMicOn}
+          isLocalCameraOn={isCameraOn}
+          isScreenSharing={isScreenSharing}
+          participants={participants}
+          status={status}
+          emptyWaitingMessage={`Waiting for ${interview.candidate.firstName} or other panel guests...`}
+        />
 
         {/* Video Control Bar */}
         <div className="flex justify-center items-center gap-3 p-3 rounded-xl border border-theme bg-card shadow-sm">
@@ -300,14 +338,14 @@ export default function InterviewRoomPage() {
         </div>
       </main>
 
-      {/* Right Column: Live Notes & Scorecard */}
+      {/* Right Column: Live Notes, Scorecard & Panel Roster */}
       <aside className="space-y-4">
         {/* Live Scratchpad */}
         <section className="rounded-xl border border-theme bg-card p-4 space-y-3 shadow-sm">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-sm text-theme-primary flex items-center gap-1.5">
               <FileText className="h-4 w-4 text-theme-accent" />
-              Live Notes
+              Live Interview Scratchpad
             </h2>
             <Button
               size="sm"
@@ -324,7 +362,7 @@ export default function InterviewRoomPage() {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Type observations, candidate responses, technical feedback during the call..."
-            className="min-h-[160px] w-full rounded-lg bg-surface border border-theme p-3 text-xs text-theme-primary placeholder:text-theme-muted focus:outline-none focus:ring-1 focus:ring-theme-accent font-mono leading-relaxed resize-none"
+            className="min-h-[140px] w-full rounded-lg bg-surface border border-theme p-3 text-xs text-theme-primary placeholder:text-theme-muted focus:outline-none focus:ring-1 focus:ring-theme-accent font-mono leading-relaxed resize-none"
           />
         </section>
 
@@ -339,7 +377,7 @@ export default function InterviewRoomPage() {
 
           {/* Question Scoring */}
           {interview.questions && interview.questions.length > 0 && (
-            <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+            <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
               {interview.questions.map((q: InterviewQuestionDto, idx: number) => (
                 <div
                   key={q.id}
@@ -402,6 +440,33 @@ export default function InterviewRoomPage() {
             {submitFeedback.isPending ? 'Submitting…' : 'Submit Scorecard'}
           </Button>
         </section>
+
+        {/* Panel Roster */}
+        {participants.length > 0 && (
+          <section className="rounded-xl border border-theme bg-card p-4 space-y-2.5 shadow-sm">
+            <h3 className="font-semibold text-xs text-theme-primary uppercase tracking-wider font-mono flex items-center gap-1.5">
+              <Users className="h-3.5 w-3.5 text-theme-accent" />
+              Connected Panel ({1 + participants.length})
+            </h3>
+            <div className="space-y-1.5 text-xs">
+              <div className="flex items-center justify-between p-2 rounded-lg bg-surface border border-theme">
+                <span className="font-medium text-theme-primary">{localName} (You)</span>
+                <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-mono">
+                  Lead Interviewer
+                </Badge>
+              </div>
+
+              {participants.map((p) => (
+                <div key={p.socketId} className="flex items-center justify-between p-2 rounded-lg bg-surface-subtle border border-theme">
+                  <span className="font-medium text-theme-primary">{p.name}</span>
+                  <Badge variant="outline" className="text-[10px] border-theme font-mono">
+                    {p.role.replace('_', ' ')}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </aside>
     </div>
   );

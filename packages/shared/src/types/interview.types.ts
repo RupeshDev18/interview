@@ -4,6 +4,7 @@ import {
   Recommendation,
   Difficulty,
   UserRole,
+  ParticipantRole,
 } from '../enums';
 
 export interface CompanySummary {
@@ -241,4 +242,43 @@ export interface CandidateJoinDetailsDto {
     durationMinutes: number;
   };
   interviewerName: string;
+}
+
+export interface CreateGuestLinkDto {
+  role?: ParticipantRole; // HR_OBSERVER or CO_INTERVIEWER
+  guestName?: string;
+  expiresInMinutes?: number;
+}
+
+export interface GuestJoinDetailsDto {
+  interviewId: string;
+  meetingRoomId: string;
+  scheduledStart: string;
+  scheduledEnd: string;
+  timezone: string;
+  status: InterviewStatus;
+  role: ParticipantRole;
+  guestName?: string;
+  candidate: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  company: {
+    name: string;
+    logoUrl?: string | null;
+  };
+  interviewType: {
+    name: string;
+    durationMinutes: number;
+  };
+  interviewerName: string;
+}
+
+export interface RemoteParticipantDto {
+  socketId: string;
+  name: string;
+  role: ParticipantRole | string;
+  isMuted?: boolean;
+  isVideoOff?: boolean;
 }

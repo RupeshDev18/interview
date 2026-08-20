@@ -2,9 +2,11 @@ import type { Server as HttpServer } from 'http';
 import { Server } from 'socket.io';
 import { authService } from '../modules/auth/auth.service';
 import { candidateLinkService } from '../modules/interviews/candidate-link.service';
+import { guestLinkService } from '../modules/interviews/guest-link.service';
 import { prisma } from './prisma';
 import { env } from '../config/env';
 import { logger } from './logger';
+import { ParticipantRole } from '@intvwplt/shared';
 
 export function initSocketServer(httpServer: HttpServer) {
   const io = new Server(httpServer, {
@@ -19,46 +21,79 @@ export function initSocketServer(httpServer: HttpServer) {
       const candidateToken =
         (socket.handshake.auth.candidateToken as string | undefined) ||
         (socket.handshake.query.candidateToken as string | undefined);
+      const guestToken =
+        (socket.handshake.auth.guestToken as string | undefined) ||
+        (socket.handshake.query.guestToken as string | undefined);
       const userToken =
         (socket.handshake.auth.token as string | undefined) ||
         (socket.handshake.query.token as string | undefined);
 
+      // 1. Candidate Join Token
       if (candidateToken) {
         try {
           const candidateDetails = await candidateLinkService.verifyToken(candidateToken);
-          socket.data.candidate = {
-            candidateId: candidateDetails.candidate.id,
+          socket.data.participant = {
+            socketId: socket.id,
+            role: ParticipantRole.CANDIDATE,
             name: `${candidateDetails.candidate.firstName} ${candidateDetails.candidate.lastName}`,
             meetingRoomId: candidateDetails.meetingRoomId,
             interviewId: candidateDetails.interviewId,
-            role: 'CANDIDATE',
           };
           return next();
         } catch {
-          // If candidate token failed, proceed to try user token if present
+          // Fall through
         }
       }
 
+      // 2. Guest / HR Observer Token
+      if (guestToken) {
+        try {
+          const guestDetails = await guestLinkService.verifyToken(guestToken);
+          socket.data.participant = {
+            socketId: socket.id,
+            role: guestDetails.role || ParticipantRole.HR_OBSERVER,
+            name: guestDetails.guestName || (guestDetails.role === ParticipantRole.HR_OBSERVER ? 'HR Observer' : 'Guest'),
+            meetingRoomId: guestDetails.meetingRoomId,
+            interviewId: guestDetails.interviewId,
+          };
+          return next();
+        } catch {
+          // Fall through
+        }
+      }
+
+      // 3. Authenticated User Token (JWT)
       if (userToken) {
-        // Try user JWT first
         try {
           const payload = authService.verifyAccessToken(userToken);
           socket.data.user = payload;
           return next();
         } catch {
-          // If token wasn't a valid JWT, see if it is a candidate token
+          // Token might be a candidate token or guest token passed in 'token' parameter
           try {
             const candidateDetails = await candidateLinkService.verifyToken(userToken);
-            socket.data.candidate = {
-              candidateId: candidateDetails.candidate.id,
+            socket.data.participant = {
+              socketId: socket.id,
+              role: ParticipantRole.CANDIDATE,
               name: `${candidateDetails.candidate.firstName} ${candidateDetails.candidate.lastName}`,
               meetingRoomId: candidateDetails.meetingRoomId,
               interviewId: candidateDetails.interviewId,
-              role: 'CANDIDATE',
             };
             return next();
           } catch {
-            return next(new Error('Unauthorized'));
+            try {
+              const guestDetails = await guestLinkService.verifyToken(userToken);
+              socket.data.participant = {
+                socketId: socket.id,
+                role: guestDetails.role || ParticipantRole.HR_OBSERVER,
+                name: guestDetails.guestName || 'Guest',
+                meetingRoomId: guestDetails.meetingRoomId,
+                interviewId: guestDetails.interviewId,
+              };
+              return next();
+            } catch {
+              return next(new Error('Unauthorized'));
+            }
           }
         }
       }
@@ -75,39 +110,53 @@ export function initSocketServer(httpServer: HttpServer) {
       'join-interview',
       async (
         { meetingRoomId }: { meetingRoomId: string },
-        done?: (result: { ok: boolean; role?: string; name?: string; error?: string }) => void,
+        done?: (result: {
+          ok: boolean;
+          participant?: any;
+          existingParticipants?: any[];
+          error?: string;
+        }) => void,
       ) => {
         try {
-          if (socket.data.candidate) {
+          // Case A: Pre-verified Candidate or Guest
+          if (socket.data.participant) {
+            const p = socket.data.participant;
             const isMatch =
-              socket.data.candidate.meetingRoomId === meetingRoomId ||
-              socket.data.candidate.interviewId === meetingRoomId;
+              p.meetingRoomId === meetingRoomId || p.interviewId === meetingRoomId;
 
             if (!isMatch) {
               return done?.({ ok: false, error: 'Unauthorized for this room' });
             }
 
-            const roomName = `interview:${socket.data.candidate.meetingRoomId}`;
+            const roomName = `interview:${p.meetingRoomId}`;
+
+            // Fetch existing peers in the room before joining
+            const socketsInRoom = await io.in(roomName).fetchSockets();
+            const existingParticipants = socketsInRoom
+              .filter((s) => s.id !== socket.id && s.data.participant)
+              .map((s) => s.data.participant);
+
             socket.join(roomName);
-            socket.to(roomName).emit('participant-joined', {
-              socketId: socket.id,
-              role: 'CANDIDATE',
-              name: socket.data.candidate.name,
-            });
+            socket.to(roomName).emit('participant-joined', p);
 
             return done?.({
               ok: true,
-              role: 'CANDIDATE',
-              name: socket.data.candidate.name,
+              participant: p,
+              existingParticipants,
             });
           }
 
+          // Case B: Authenticated User (Lead Interviewer, Co-Interviewer, Recruiter, Admin)
           if (socket.data.user) {
             const interview = await prisma.interview.findFirst({
               where: {
                 OR: [{ meetingRoomId }, { id: meetingRoomId }],
               },
-              include: { interviewer: true },
+              include: {
+                interviewer: {
+                  include: { user: true },
+                },
+              },
             });
 
             if (!interview) {
@@ -121,40 +170,62 @@ export function initSocketServer(httpServer: HttpServer) {
               email?: string;
             };
 
-            const isAdmin = user.role === 'ADMIN';
-            const isAssignedInterviewer =
+            const isAssignedLead =
               interview.interviewer?.userId === user.sub ||
               interview.interviewerId === user.sub;
             const isCreator = interview.createdById === user.sub;
             const isCompanyMember = !!user.companyId && user.companyId === interview.companyId;
-            const isCompanyAdminOrRecruiter =
-              (user.role === 'COMPANY_ADMIN' || user.role === 'RECRUITER') &&
-              (!user.companyId || user.companyId === interview.companyId);
+            const isAdmin = user.role === 'ADMIN';
 
             const allowed =
               isAdmin ||
-              isAssignedInterviewer ||
+              isAssignedLead ||
               isCreator ||
               isCompanyMember ||
-              isCompanyAdminOrRecruiter ||
+              user.role === 'COMPANY_ADMIN' ||
+              user.role === 'RECRUITER' ||
               user.role === 'INTERVIEWER';
 
             if (!allowed) {
               return done?.({ ok: false, error: 'Not authorized for this room' });
             }
 
-            const roomName = `interview:${interview.meetingRoomId}`;
-            socket.join(roomName);
-            socket.to(roomName).emit('participant-joined', {
-              socketId: socket.id,
-              role: user.role,
-              name: 'Interviewer',
+            // Determine specific role in this interview
+            let role: ParticipantRole = ParticipantRole.CO_INTERVIEWER;
+            if (isAssignedLead || isAdmin) {
+              role = ParticipantRole.LEAD_INTERVIEWER;
+            } else if (user.role === 'RECRUITER') {
+              role = ParticipantRole.HR_OBSERVER;
+            }
+
+            const dbUser = await prisma.user.findUnique({
+              where: { id: user.sub },
+              select: { firstName: true, lastName: true },
             });
+
+            const participant = {
+              socketId: socket.id,
+              role,
+              name: dbUser ? `${dbUser.firstName} ${dbUser.lastName}` : 'Interviewer',
+              meetingRoomId: interview.meetingRoomId,
+              interviewId: interview.id,
+            };
+
+            socket.data.participant = participant;
+            const roomName = `interview:${interview.meetingRoomId}`;
+
+            const socketsInRoom = await io.in(roomName).fetchSockets();
+            const existingParticipants = socketsInRoom
+              .filter((s) => s.id !== socket.id && s.data.participant)
+              .map((s) => s.data.participant);
+
+            socket.join(roomName);
+            socket.to(roomName).emit('participant-joined', participant);
 
             return done?.({
               ok: true,
-              role: user.role,
-              name: 'Interviewer',
+              participant,
+              existingParticipants,
             });
           }
 
@@ -166,15 +237,45 @@ export function initSocketServer(httpServer: HttpServer) {
       },
     );
 
+    // Multi-Peer WebRTC Signaling Relay
     socket.on(
       'webrtc-signal',
-      ({ meetingRoomId, signal, to }: { meetingRoomId: string; signal: any; to?: string }) => {
+      ({
+        meetingRoomId,
+        signal,
+        to,
+      }: {
+        meetingRoomId: string;
+        signal: any;
+        to?: string;
+      }) => {
         const roomName = `interview:${meetingRoomId}`;
         if (to) {
           io.to(to).emit('webrtc-signal', { from: socket.id, signal });
         } else {
           socket.to(roomName).emit('webrtc-signal', { from: socket.id, signal });
         }
+      },
+    );
+
+    // Sync media status (mic muted, camera off) across all participants
+    socket.on(
+      'participant-media-status',
+      ({
+        meetingRoomId,
+        isMicOn,
+        isCameraOn,
+      }: {
+        meetingRoomId: string;
+        isMicOn: boolean;
+        isCameraOn: boolean;
+      }) => {
+        const roomName = `interview:${meetingRoomId}`;
+        socket.to(roomName).emit('participant-media-status', {
+          socketId: socket.id,
+          isMicOn,
+          isCameraOn,
+        });
       },
     );
 
@@ -189,5 +290,3 @@ export function initSocketServer(httpServer: HttpServer) {
 
   return io;
 }
-
-

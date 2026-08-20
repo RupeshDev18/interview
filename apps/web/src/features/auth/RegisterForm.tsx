@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { Eye, EyeOff, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, UserPlus, Building2 } from 'lucide-react';
 import { useState } from 'react';
 import { registerSchema, type RegisterFormValues } from '@/schemas/auth.schemas';
 import { useRegister } from '@/hooks/use-auth';
@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 
 export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const registerMutation = useRegister();
 
   const {
@@ -22,6 +23,9 @@ export function RegisterForm() {
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
+    defaultValues: {
+      role: 'COMPANY_ADMIN',
+    },
   });
 
   const onSubmit = (values: RegisterFormValues) => {
@@ -94,6 +98,24 @@ export function RegisterForm() {
           </div>
 
           <div className="space-y-1.5">
+            <Label className="text-theme-primary text-xs font-semibold">Organization / Company Name</Label>
+            <div className="relative">
+              <Input
+                placeholder="Acme Technologies"
+                className={cn(
+                  'bg-surface border-theme text-theme-primary placeholder:text-theme-muted focus-visible:ring-theme-accent text-xs h-10 pl-8',
+                  errors.companyName && 'border-rose-500',
+                )}
+                {...register('companyName')}
+              />
+              <Building2 className="h-4 w-4 text-theme-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
+            </div>
+            {errors.companyName && (
+              <p className="text-xs text-rose-500">{errors.companyName.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
             <Label className="text-theme-primary text-xs font-semibold">Password</Label>
             <div className="relative">
               <Input
@@ -113,8 +135,37 @@ export function RegisterForm() {
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-            {errors.password && (
+            {errors.password ? (
               <p className="text-xs text-rose-500">{errors.password.message}</p>
+            ) : (
+              <p className="text-[11px] text-theme-muted">
+                At least 8 chars with 1 uppercase, 1 lowercase & 1 number
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-theme-primary text-xs font-semibold">Confirm Password</Label>
+            <div className="relative">
+              <Input
+                type={showConfirmPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                className={cn(
+                  'bg-surface border-theme text-theme-primary placeholder:text-theme-muted pr-10 focus-visible:ring-theme-accent text-xs h-10',
+                  errors.confirmPassword && 'border-rose-500',
+                )}
+                {...register('confirmPassword')}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-muted hover:text-theme-primary"
+              >
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {errors.confirmPassword && (
+              <p className="text-xs text-rose-500">{errors.confirmPassword.message}</p>
             )}
           </div>
 

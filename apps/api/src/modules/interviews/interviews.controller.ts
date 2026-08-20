@@ -3,6 +3,7 @@ import { interviewsService } from './interviews.service';
 import { sendSuccess, sendCreated, sendPaginated } from '../../utils/response';
 import type { InterviewStatus } from '@intvwplt/shared';
 import { candidateLinkService } from './candidate-link.service';
+import { guestLinkService } from './guest-link.service';
 
 export const interviewsController = {
   async list(req: Request, res: Response): Promise<void> {
@@ -78,5 +79,15 @@ export const interviewsController = {
     const result = await candidateLinkService.verifyToken(token);
     sendSuccess(res, result, 'Candidate interview details retrieved');
   },
-};
 
+  async createGuestLink(req: Request, res: Response): Promise<void> {
+    const result = await guestLinkService.create(req.params.id as string, req.user!, req.body);
+    sendSuccess(res, result, 'Guest invitation link generated');
+  },
+
+  async getGuestJoinDetails(req: Request, res: Response): Promise<void> {
+    const token = req.params.token as string;
+    const result = await guestLinkService.verifyToken(token);
+    sendSuccess(res, result, 'Guest interview details retrieved');
+  },
+};

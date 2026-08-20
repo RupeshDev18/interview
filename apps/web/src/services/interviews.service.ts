@@ -11,6 +11,8 @@ import type {
   ApiSuccessResponse,
   InterviewStatus,
   CandidateJoinDetailsDto,
+  CreateGuestLinkDto,
+  GuestJoinDetailsDto,
 } from '@intvwplt/shared';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
@@ -99,7 +101,9 @@ export const interviewsService = {
   },
 
   async createCandidateLink(id: string) {
-    const response = await apiClient.post<ApiSuccessResponse<{ token: string; expiresAt: string }>>(`/interviews/${id}/candidate-link`);
+    const response = await apiClient.post<ApiSuccessResponse<{ token: string; expiresAt: string }>>(
+      `/interviews/${id}/candidate-link`,
+    );
     return response.data.data;
   },
 
@@ -109,5 +113,23 @@ export const interviewsService = {
     );
     return response.data.data;
   },
-};
 
+  async createGuestLink(id: string, data?: CreateGuestLinkDto) {
+    const response = await apiClient.post<
+      ApiSuccessResponse<{
+        token: string;
+        guestJoinUrl: string;
+        role: string;
+        guestName: string;
+      }>
+    >(`/interviews/${id}/guest-link`, data || {});
+    return response.data.data;
+  },
+
+  async getGuestJoinDetails(token: string) {
+    const response = await axios.get<ApiSuccessResponse<GuestJoinDetailsDto>>(
+      `${BASE_URL}/api/v1/interviews/guest/join/${token}`,
+    );
+    return response.data.data;
+  },
+};

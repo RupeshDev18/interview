@@ -6,6 +6,20 @@ import type {
   AvailabilityExceptionDto,
 } from '@intvwplt/shared';
 
+export interface CreateInterviewerDto {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password?: string;
+  companyId?: string;
+  bio?: string;
+  yearsOfExperience?: number;
+  expertise?: string[];
+  technologies?: string[];
+  timezone?: string;
+  isAvailable?: boolean;
+}
+
 export const interviewersService = {
   async list(filters?: { isAvailable?: boolean; search?: string }) {
     const params = new URLSearchParams();
@@ -27,6 +41,14 @@ export const interviewersService = {
   async getById(id: string) {
     const response = await apiClient.get<ApiSuccessResponse<InterviewerSummary>>(
       `/interviewers/${id}`,
+    );
+    return response.data.data;
+  },
+
+  async create(data: CreateInterviewerDto) {
+    const response = await apiClient.post<ApiSuccessResponse<InterviewerSummary>>(
+      '/interviewers',
+      data,
     );
     return response.data.data;
   },

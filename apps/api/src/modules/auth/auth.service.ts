@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import type { User } from '@prisma/client';
 import { env } from '../../config/env';
+import { prisma } from '../../lib/prisma';
 import { authRepository } from './auth.repository';
 import {
   AuthenticationError,
@@ -87,14 +88,28 @@ export const authService = {
       parallelism: 4,
     });
 
+    let companyId = input.companyId;
+    let role = input.role || 'COMPANY_ADMIN';
+
+    if (input.companyName && !companyId) {
+      const newCompany = await prisma.company.create({
+        data: {
+          name: input.companyName.trim(),
+          email: input.email,
+        },
+      });
+      companyId = newCompany.id;
+      role = 'COMPANY_ADMIN';
+    }
+
     const user = await authRepository.createUser({
       email: input.email,
       passwordHash,
       firstName: input.firstName,
       lastName: input.lastName,
       phone: input.phone,
-      role: input.role as 'COMPANY_ADMIN' | 'RECRUITER' | 'INTERVIEWER',
-      companyId: input.companyId,
+      role: role as 'COMPANY_ADMIN' | 'RECRUITER' | 'INTERVIEWER',
+      companyId,
     });
 
     await auditService.log({
@@ -116,14 +131,18 @@ export const authService = {
     meta: { ipAddress?: string; userAgent?: string },
   ): Promise<{ user: ReturnType<typeof sanitizeUser>; tokens: AuthTokens }> {
     const user = await authRepository.findUserByEmail(input.email);
+
     if (!user) {
-      // Prevent email enumeration — always run hash comparison
-      await argon2.hash('dummy_prevent_timing_attack');
+      // Constant-time dummy verification to mitigate timing attacks
+      await argon2.verify(
+        '$argon2id$v=19$m=65536,t=3,p=4$dummyhashdummyhashdummyhash$dummyhashdummyhashdummyhash',
+        input.password,
+      );
       throw new AuthenticationError('Invalid email or password');
     }
 
-    if (!user.isActive || user.deletedAt) {
-      throw new AuthorizationError('Account is inactive. Please contact support.');
+    if (!user.isActive) {
+      throw new AuthorizationError('Your account has been deactivated. Please contact support.');
     }
 
     const passwordValid = await argon2.verify(user.passwordHash, input.password);
@@ -131,31 +150,9 @@ export const authService = {
       throw new AuthenticationError('Invalid email or password');
     }
 
-    const tokens = await authService.issueTokens(user, meta);
-
-    await authRepository.updateLastLogin(user.id);
-
-    await auditService.log({
-      actorId: user.id,
-      companyId: user.companyId ?? undefined,
-      action: AuditAction.USER_LOGIN,
-      entityType: 'User',
-      entityId: user.id,
-      ipAddress: meta.ipAddress,
-      userAgent: meta.userAgent,
-    });
-
-    return { user: sanitizeUser(user), tokens };
-  },
-
-  async issueTokens(
-    user: User,
-    meta: { ipAddress?: string; userAgent?: string },
-  ): Promise<AuthTokens> {
-    const accessToken = generateAccessToken(user);
+    const familyId = uuidv4();
     const rawRefreshToken = generateRefreshToken();
     const tokenHash = await hashToken(rawRefreshToken);
-    const familyId = uuidv4();
     const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS);
 
     await authRepository.createRefreshToken({
@@ -163,98 +160,126 @@ export const authService = {
       tokenHash,
       familyId,
       expiresAt,
+      userAgent: meta.userAgent,
+      ipAddress: meta.ipAddress,
+    });
+
+    await authRepository.updateLastLogin(user.id);
+
+    const accessToken = generateAccessToken(user);
+
+    await auditService.log({
+      actorId: user.id,
+      companyId: user.companyId ?? undefined,
+      action: AuditAction.USER_LOGIN,
+      entityType: 'User',
+      entityId: user.id,
+      metadata: { email: user.email },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
 
     return {
-      accessToken,
-      refreshToken: rawRefreshToken,
-      expiresAt,
+      user: sanitizeUser(user),
+      tokens: {
+        accessToken,
+        refreshToken: rawRefreshToken,
+        expiresAt,
+      },
     };
   },
 
   async refresh(
     rawRefreshToken: string,
     meta: { ipAddress?: string; userAgent?: string },
-  ): Promise<{ accessToken: string; refreshToken: string; expiresAt: Date }> {
+  ): Promise<AuthTokens> {
     const tokenHash = await hashToken(rawRefreshToken);
-    const storedToken = await authRepository.findRefreshTokenByHash(tokenHash);
+    const stored = await authRepository.findRefreshTokenByHash(tokenHash);
 
-    if (!storedToken) {
+    if (!stored) {
       throw new AuthenticationError('Invalid refresh token');
     }
 
-    // Token reuse detection — potential theft
-    if (storedToken.revokedAt !== null) {
-      // Revoke the entire family (all sessions that derived from this chain)
-      await authRepository.revokeFamilyTokens(storedToken.familyId);
-      throw new AuthenticationError(
-        'Refresh token reuse detected. All sessions have been invalidated for security.',
-      );
+    if (stored.revokedAt) {
+      // Reuse of a revoked token — potential token theft!
+      await authRepository.revokeFamilyTokens(stored.familyId);
+      await auditService.log({
+        actorId: stored.userId,
+        action: AuditAction.USER_LOGOUT,
+        entityType: 'RefreshToken',
+        entityId: stored.id,
+        metadata: { familyId: stored.familyId, tokenHash },
+        ipAddress: meta.ipAddress,
+        userAgent: meta.userAgent,
+      });
+      throw new AuthenticationError('Refresh token has been revoked. All sessions invalidated for security.');
     }
 
-    if (storedToken.expiresAt < new Date()) {
-      throw new AuthenticationError('Refresh token expired. Please log in again.');
+    if (stored.expiresAt < new Date()) {
+      throw new AuthenticationError('Refresh token has expired');
     }
 
-    const user = await authRepository.findUserById(storedToken.userId);
-    if (!user || !user.isActive || user.deletedAt) {
-      await authRepository.revokeRefreshToken(storedToken.id);
-      throw new AuthenticationError('Account not found or inactive');
+    const user = await authRepository.findUserById(stored.userId);
+    if (!user || !user.isActive) {
+      throw new AuthenticationError('User not found or inactive');
     }
 
-    // Issue new tokens
-    const newAccessToken = generateAccessToken(user);
+    // Rotate: create new token in same family and revoke old one
     const newRawRefreshToken = generateRefreshToken();
     const newTokenHash = await hashToken(newRawRefreshToken);
     const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS);
 
-    // Create new token FIRST, then revoke old one (atomically linked)
-    const newToken = await authRepository.createRefreshToken({
+    const newStored = await authRepository.createRefreshToken({
       userId: user.id,
       tokenHash: newTokenHash,
-      familyId: storedToken.familyId, // same family — preserves the rotation chain
+      familyId: stored.familyId,
       expiresAt,
-      ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
+      ipAddress: meta.ipAddress,
     });
 
-    await authRepository.revokeRefreshToken(storedToken.id, newToken.id);
+    await authRepository.revokeRefreshToken(stored.id, newStored.id);
+
+    const accessToken = generateAccessToken(user);
 
     return {
-      accessToken: newAccessToken,
+      accessToken,
       refreshToken: newRawRefreshToken,
       expiresAt,
     };
   },
 
-  async logout(rawRefreshToken: string, actorId: string, meta: { ipAddress?: string; userAgent?: string }): Promise<void> {
+  async logout(
+    rawRefreshToken: string,
+    actorId: string,
+    meta: { ipAddress?: string; userAgent?: string },
+  ): Promise<void> {
     const tokenHash = await hashToken(rawRefreshToken);
-    const storedToken = await authRepository.findRefreshTokenByHash(tokenHash);
-
-    if (storedToken && storedToken.userId === actorId) {
-      await authRepository.revokeRefreshToken(storedToken.id);
+    const stored = await authRepository.findRefreshTokenByHash(tokenHash);
+    if (stored && !stored.revokedAt) {
+      await authRepository.revokeRefreshToken(stored.id);
+      await auditService.log({
+        actorId,
+        action: AuditAction.USER_LOGOUT,
+        entityType: 'RefreshToken',
+        entityId: stored.id,
+        ipAddress: meta.ipAddress,
+        userAgent: meta.userAgent,
+      });
     }
-
-    await auditService.log({
-      actorId,
-      action: AuditAction.USER_LOGOUT,
-      entityType: 'User',
-      entityId: actorId,
-      ipAddress: meta.ipAddress,
-      userAgent: meta.userAgent,
-    });
   },
 
-  async logoutAll(userId: string, meta: { ipAddress?: string; userAgent?: string }): Promise<void> {
+  async logoutAll(
+    userId: string,
+    meta: { ipAddress?: string; userAgent?: string },
+  ): Promise<void> {
     await authRepository.revokeAllUserTokens(userId);
     await auditService.log({
       actorId: userId,
       action: AuditAction.USER_LOGOUT,
       entityType: 'User',
       entityId: userId,
-      metadata: { allSessions: true },
+      metadata: { scope: 'ALL_SESSIONS' },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });
@@ -266,24 +291,35 @@ export const authService = {
     meta: { ipAddress?: string; userAgent?: string },
   ): Promise<void> {
     const user = await authRepository.findUserById(userId);
-    if (!user) throw new NotFoundError('User');
+    if (!user) {
+      throw new NotFoundError('User');
+    }
 
-    const valid = await argon2.verify(user.passwordHash, input.currentPassword);
-    if (!valid) throw new AuthenticationError('Current password is incorrect');
+    const currentValid = await argon2.verify(user.passwordHash, input.currentPassword);
+    if (!currentValid) {
+      throw new AuthenticationError('Current password is incorrect');
+    }
 
-    const newHash = await argon2.hash(input.newPassword, {
+    const isSamePassword = await argon2.verify(user.passwordHash, input.newPassword);
+    if (isSamePassword) {
+      throw new ConflictError('New password must be different from current password');
+    }
+
+    const newPasswordHash = await argon2.hash(input.newPassword, {
       type: argon2.argon2id,
       memoryCost: 65536,
       timeCost: 3,
       parallelism: 4,
     });
 
-    await authRepository.updatePassword(userId, newHash);
-    // Revoke all existing sessions so re-login is required on other devices
+    await authRepository.updatePassword(userId, newPasswordHash);
+
+    // Invalidate all existing sessions on password change
     await authRepository.revokeAllUserTokens(userId);
 
     await auditService.log({
       actorId: userId,
+      companyId: user.companyId ?? undefined,
       action: AuditAction.PASSWORD_CHANGED,
       entityType: 'User',
       entityId: userId,

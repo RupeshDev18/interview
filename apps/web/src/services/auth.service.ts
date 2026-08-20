@@ -11,6 +11,7 @@ export interface RegisterPayload {
   password: string;
   firstName: string;
   lastName: string;
+  companyName?: string;
   phone?: string;
   companyId?: string;
   role?: string;

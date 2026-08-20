@@ -13,10 +13,20 @@ const ICE_SERVERS: RTCConfiguration = {
   ],
 };
 
+export interface RemoteParticipant {
+  socketId: string;
+  name: string;
+  role: string;
+  stream: MediaStream | null;
+  isMicOn?: boolean;
+  isCameraOn?: boolean;
+}
+
 interface UseWebRtcRoomOptions {
   meetingRoomId: string;
   token?: string | null;
   candidateToken?: string | null;
+  guestToken?: string | null;
   autoConnect?: boolean;
 }
 
@@ -26,79 +36,85 @@ export function useWebRtcRoom({
   meetingRoomId,
   token,
   candidateToken,
+  guestToken,
   autoConnect = true,
 }: UseWebRtcRoomOptions) {
   const [status, setStatus] = useState<ConnectionStatus>('idle');
-  const [remoteParticipant, setRemoteParticipant] = useState<{
-    role?: string;
-    name?: string;
+  const [myParticipantInfo, setMyParticipantInfo] = useState<{
     socketId?: string;
+    name?: string;
+    role?: string;
   } | null>(null);
+
+  const [participants, setParticipants] = useState<RemoteParticipant[]>([]);
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement>(null);
-
   const socketRef = useRef<Socket | null>(null);
-  const peerRef = useRef<RTCPeerConnection | null>(null);
+  const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map());
   const localStreamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
-  const iceCandidatesQueue = useRef<RTCIceCandidateInit[]>([]);
-  const isMakingOfferRef = useRef(false);
+  const iceQueuesRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
+  const isMakingOfferMapRef = useRef<Map<string, boolean>>(new Map());
 
-  // Candidate is polite (yields on collisions), Interviewer is impolite
-  const isPolite = !token && !!candidateToken;
-
-  // Flush queued ICE candidates after remote description is set
-  const flushIceCandidates = useCallback(async (peer: RTCPeerConnection) => {
-    while (iceCandidatesQueue.current.length > 0) {
-      const candidate = iceCandidatesQueue.current.shift();
+  // Flush queued ICE candidates for a specific peer
+  const flushIceQueue = useCallback(async (remoteSocketId: string, peer: RTCPeerConnection) => {
+    const queue = iceQueuesRef.current.get(remoteSocketId) || [];
+    while (queue.length > 0) {
+      const candidate = queue.shift();
       if (candidate) {
         try {
           await peer.addIceCandidate(new RTCIceCandidate(candidate));
         } catch (err) {
-          console.warn('Could not add queued candidate:', err);
+          console.warn(`Could not add queued candidate for ${remoteSocketId}:`, err);
         }
       }
     }
   }, []);
 
-  // Setup Peer Connection
-  const createPeerConnection = useCallback(
-    (socket: Socket) => {
-      if (peerRef.current) {
+  // Create & configure a PeerConnection for a specific remote participant
+  const createPeerForRemote = useCallback(
+    (remoteSocketId: string, socket: Socket): RTCPeerConnection => {
+      // Close existing peer if any
+      const existing = peersRef.current.get(remoteSocketId);
+      if (existing) {
         try {
-          peerRef.current.close();
+          existing.close();
         } catch {}
       }
 
       const peer = new RTCPeerConnection(ICE_SERVERS);
-      peerRef.current = peer;
+      peersRef.current.set(remoteSocketId, peer);
 
-      // Attach existing local tracks
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((track) => {
-          peer.addTrack(track, localStreamRef.current!);
+      // Attach current local tracks (or screen track if sharing)
+      const streamToAttach = screenStreamRef.current || localStreamRef.current;
+      if (streamToAttach) {
+        streamToAttach.getTracks().forEach((track) => {
+          peer.addTrack(track, streamToAttach);
         });
       }
 
-      // Handle remote media stream arrival
+      // Handle receiving remote tracks
       peer.ontrack = (event) => {
-        const [stream] = event.streams;
-        if (remoteVideoRef.current && stream) {
-          remoteVideoRef.current.srcObject = stream;
-          setStatus('connected');
+        const [incomingStream] = event.streams;
+        if (incomingStream) {
+          setParticipants((prev) =>
+            prev.map((p) =>
+              p.socketId === remoteSocketId ? { ...p, stream: incomingStream } : p,
+            ),
+          );
         }
       };
 
-      // Handle ICE candidates generated locally
+      // Handle ICE candidate generation
       peer.onicecandidate = (event) => {
         if (event.candidate && socket.connected) {
           socket.emit('webrtc-signal', {
             meetingRoomId,
+            to: remoteSocketId,
             signal: {
               type: 'candidate',
               candidate: event.candidate.toJSON(),
@@ -108,19 +124,20 @@ export function useWebRtcRoom({
       };
 
       peer.onconnectionstatechange = () => {
-        switch (peer.connectionState) {
-          case 'connected':
-            setStatus('connected');
-            break;
-          case 'disconnected':
-            setStatus('disconnected');
-            break;
-          case 'failed':
-            setStatus('failed');
-            break;
-          case 'closed':
-            setStatus('idle');
-            break;
+        if (peer.connectionState === 'connected') {
+          setStatus('connected');
+        } else if (
+          peer.connectionState === 'failed' ||
+          peer.connectionState === 'closed' ||
+          peer.connectionState === 'disconnected'
+        ) {
+          // Check if any other peer is connected
+          const hasAnyConnected = Array.from(peersRef.current.values()).some(
+            (p) => p.connectionState === 'connected',
+          );
+          if (!hasAnyConnected) {
+            setStatus(peer.connectionState === 'failed' ? 'failed' : 'disconnected');
+          }
         }
       };
 
@@ -129,11 +146,49 @@ export function useWebRtcRoom({
     [meetingRoomId],
   );
 
+  // Initiate an offer to a specific remote participant
+  const sendOfferToRemote = useCallback(
+    async (remoteSocketId: string, socket: Socket) => {
+      let peer = peersRef.current.get(remoteSocketId);
+      if (!peer) {
+        peer = createPeerForRemote(remoteSocketId, socket);
+      }
+
+      try {
+        isMakingOfferMapRef.current.set(remoteSocketId, true);
+        const offer = await peer.createOffer({
+          offerToReceiveAudio: true,
+          offerToReceiveVideo: true,
+        });
+
+        if (peer.signalingState !== 'stable') {
+          console.warn('Signaling state not stable for offer:', peer.signalingState);
+          return;
+        }
+
+        await peer.setLocalDescription(offer);
+
+        socket.emit('webrtc-signal', {
+          meetingRoomId,
+          to: remoteSocketId,
+          signal: {
+            type: 'offer',
+            sdp: offer,
+          },
+        });
+      } catch (err) {
+        console.error(`Error creating offer for ${remoteSocketId}:`, err);
+      } finally {
+        isMakingOfferMapRef.current.set(remoteSocketId, false);
+      }
+    },
+    [meetingRoomId, createPeerForRemote],
+  );
+
   // Safe media stream acquisition
   const acquireMediaStream = async (): Promise<MediaStream | null> => {
     setPermissionError(null);
     try {
-      // 1. Try full video + audio
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 1280 },
@@ -151,8 +206,6 @@ export function useWebRtcRoom({
       return stream;
     } catch (err: any) {
       console.warn('Full media acquisition failed, trying audio-only fallback:', err?.name);
-
-      // 2. Try audio-only if video failed
       try {
         const audioOnlyStream = await navigator.mediaDevices.getUserMedia({
           audio: {
@@ -163,7 +216,7 @@ export function useWebRtcRoom({
         });
         setIsCameraOn(false);
         setIsMicOn(true);
-        setPermissionError('Camera is unavailable or permission was blocked. Audio is connected.');
+        setPermissionError('Camera is unavailable or permission blocked. Connected with audio only.');
         return audioOnlyStream;
       } catch (audioErr: any) {
         console.warn('Audio acquisition also failed:', audioErr?.name);
@@ -171,33 +224,38 @@ export function useWebRtcRoom({
         setIsMicOn(false);
         if (audioErr?.name === 'NotAllowedError' || err?.name === 'NotAllowedError') {
           setPermissionError(
-            'Camera and microphone access were blocked. Please click the lock or camera icon in your browser address bar to allow permissions.',
+            'Camera/Microphone access was blocked. Please enable browser permissions.',
           );
         } else {
-          setPermissionError('No camera or microphone device was detected.');
+          setPermissionError('No audio or video input device detected.');
         }
         return null;
       }
     }
   };
 
-  // Connect to media & socket
+  // Connect to media & Socket.IO
   const connect = useCallback(async () => {
-    if (!meetingRoomId || (!token && !candidateToken)) return;
+    if (!meetingRoomId || (!token && !candidateToken && !guestToken)) return;
 
     setStatus('connecting');
 
     try {
-      // 1. Attempt to get media stream (gracefully handles permission blocks)
+      // 1. Acquire local webcam & mic
       const stream = await acquireMediaStream();
       localStreamRef.current = stream;
       if (localVideoRef.current && stream) {
         localVideoRef.current.srcObject = stream;
       }
 
-      // 2. Connect Socket.IO with polling first for 100% reliable handshake
+      // 2. Connect Socket.IO
+      const authPayload: Record<string, any> = {};
+      if (candidateToken) authPayload.candidateToken = candidateToken;
+      else if (guestToken) authPayload.guestToken = guestToken;
+      else if (token) authPayload.token = token;
+
       const socket = io(BASE_URL, {
-        auth: candidateToken ? { candidateToken } : { token },
+        auth: authPayload,
         transports: ['polling', 'websocket'],
         reconnection: true,
         reconnectionAttempts: 5,
@@ -206,85 +264,92 @@ export function useWebRtcRoom({
       socketRef.current = socket;
 
       socket.on('connect', () => {
-        createPeerConnection(socket);
-
         socket.emit(
           'join-interview',
           { meetingRoomId },
-          (response: { ok: boolean; role?: string; name?: string; error?: string }) => {
+          async (response: {
+            ok: boolean;
+            participant?: { socketId: string; role: string; name: string };
+            existingParticipants?: Array<{ socketId: string; role: string; name: string }>;
+            error?: string;
+          }) => {
             if (!response.ok) {
               console.error('Failed to join room:', response.error);
               setStatus('failed');
+              return;
+            }
+
+            if (response.participant) {
+              setMyParticipantInfo(response.participant);
+            }
+
+            // If other participants already in room, initialize peer connection and send offer
+            if (response.existingParticipants && response.existingParticipants.length > 0) {
+              setParticipants(
+                response.existingParticipants.map((p) => ({
+                  socketId: p.socketId,
+                  name: p.name,
+                  role: p.role,
+                  stream: null,
+                  isMicOn: true,
+                  isCameraOn: true,
+                })),
+              );
+
+              for (const existingPeer of response.existingParticipants) {
+                await sendOfferToRemote(existingPeer.socketId, socket);
+              }
             }
           },
         );
       });
 
-      // When another participant joins, send an initial offer
+      // When a new participant joins
       socket.on(
         'participant-joined',
-        async (data: { socketId: string; role?: string; name?: string }) => {
-          setRemoteParticipant(data);
-          let peer = peerRef.current;
-          if (!peer) {
-            peer = createPeerConnection(socket);
-          }
-
-          try {
-            isMakingOfferRef.current = true;
-            const offer = await peer.createOffer({
-              offerToReceiveAudio: true,
-              offerToReceiveVideo: true,
-            });
-
-            if (peer.signalingState !== 'stable') {
-              console.warn('Signaling state is not stable for offer:', peer.signalingState);
-              return;
-            }
-
-            await peer.setLocalDescription(offer);
-
-            socket.emit('webrtc-signal', {
-              meetingRoomId,
-              to: data.socketId,
-              signal: {
-                type: 'offer',
-                sdp: offer,
+        (data: { socketId: string; role?: string; name?: string }) => {
+          setParticipants((prev) => {
+            if (prev.some((p) => p.socketId === data.socketId)) return prev;
+            return [
+              ...prev,
+              {
+                socketId: data.socketId,
+                name: data.name || 'Participant',
+                role: data.role || 'GUEST',
+                stream: null,
+                isMicOn: true,
+                isCameraOn: true,
               },
-            });
-          } catch (err) {
-            console.error('Error creating WebRTC offer:', err);
-          } finally {
-            isMakingOfferRef.current = false;
-          }
+            ];
+          });
         },
       );
 
-      // Handle WebRTC signaling signals (offer, answer, candidate)
+      // Handle WebRTC signaling per remote peer
       socket.on(
         'webrtc-signal',
         async ({ from, signal }: { from: string; signal: any }) => {
-          let peer = peerRef.current;
+          let peer = peersRef.current.get(from);
           if (!peer) {
-            peer = createPeerConnection(socket);
+            peer = createPeerForRemote(from, socket);
           }
+
+          // Deterministic polite rule: socket with smaller ID yields during glare
+          const isPolite = socket.id ? socket.id < from : false;
 
           try {
             if (signal.type === 'offer') {
-              const offerCollision =
-                isMakingOfferRef.current || peer.signalingState !== 'stable';
+              const isMakingOffer = isMakingOfferMapRef.current.get(from) || false;
+              const offerCollision = isMakingOffer || peer.signalingState !== 'stable';
 
-              // If glare / collision occurs
               if (offerCollision) {
                 if (!isPolite) {
-                  // Impolite peer ignores incoming offer
-                  return;
+                  return; // Impolite peer ignores colliding incoming offer
                 }
-                // Polite peer accepts incoming offer
               }
 
               await peer.setRemoteDescription(new RTCSessionDescription(signal.sdp));
-              await flushIceCandidates(peer);
+              await flushIceQueue(from, peer);
 
               if (peer.signalingState === 'have-remote-offer') {
                 const answer = await peer.createAnswer();
@@ -302,33 +367,62 @@ export function useWebRtcRoom({
             } else if (signal.type === 'answer') {
               if (peer.signalingState === 'have-local-offer') {
                 await peer.setRemoteDescription(new RTCSessionDescription(signal.sdp));
-                await flushIceCandidates(peer);
-              } else {
-                console.warn(`Ignoring answer received in state: ${peer.signalingState}`);
+                await flushIceQueue(from, peer);
               }
             } else if (signal.type === 'candidate' && signal.candidate) {
               if (peer.remoteDescription && peer.remoteDescription.type) {
                 try {
                   await peer.addIceCandidate(new RTCIceCandidate(signal.candidate));
                 } catch (err) {
-                  console.warn('Error adding ICE candidate:', err);
+                  console.warn(`Error adding ICE candidate from ${from}:`, err);
                 }
               } else {
-                iceCandidatesQueue.current.push(signal.candidate);
+                const queue = iceQueuesRef.current.get(from) || [];
+                queue.push(signal.candidate);
+                iceQueuesRef.current.set(from, queue);
               }
             }
           } catch (err) {
-            console.error('Error handling WebRTC signal:', err);
+            console.error(`Error handling signal from ${from}:`, err);
           }
         },
       );
 
-      socket.on('participant-left', () => {
-        setRemoteParticipant(null);
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = null;
+      // Handle media status sync (e.g. participant muted/unmuted)
+      socket.on(
+        'participant-media-status',
+        ({
+          socketId,
+          isMicOn: remoteMic,
+          isCameraOn: remoteCam,
+        }: {
+          socketId: string;
+          isMicOn: boolean;
+          isCameraOn: boolean;
+        }) => {
+          setParticipants((prev) =>
+            prev.map((p) =>
+              p.socketId === socketId
+                ? { ...p, isMicOn: remoteMic, isCameraOn: remoteCam }
+                : p,
+            ),
+          );
+        },
+      );
+
+      // When a participant leaves
+      socket.on('participant-left', ({ socketId }: { socketId: string }) => {
+        const peer = peersRef.current.get(socketId);
+        if (peer) {
+          try {
+            peer.close();
+          } catch {}
+          peersRef.current.delete(socketId);
         }
-        setStatus('disconnected');
+        iceQueuesRef.current.delete(socketId);
+        isMakingOfferMapRef.current.delete(socketId);
+
+        setParticipants((prev) => prev.filter((p) => p.socketId !== socketId));
       });
 
       socket.on('connect_error', (err) => {
@@ -336,10 +430,18 @@ export function useWebRtcRoom({
         setStatus('failed');
       });
     } catch (err) {
-      console.error('Failed to initialize connection:', err);
+      console.error('Failed to initialize WebRTC connection:', err);
       setStatus('failed');
     }
-  }, [meetingRoomId, token, candidateToken, isPolite, createPeerConnection, flushIceCandidates]);
+  }, [
+    meetingRoomId,
+    token,
+    candidateToken,
+    guestToken,
+    createPeerForRemote,
+    sendOfferToRemote,
+    flushIceQueue,
+  ]);
 
   // Clean up
   const disconnect = useCallback(() => {
@@ -351,18 +453,23 @@ export function useWebRtcRoom({
       screenStreamRef.current.getTracks().forEach((track) => track.stop());
       screenStreamRef.current = null;
     }
-    if (peerRef.current) {
-      peerRef.current.close();
-      peerRef.current = null;
-    }
+    peersRef.current.forEach((peer) => {
+      try {
+        peer.close();
+      } catch {}
+    });
+    peersRef.current.clear();
+    iceQueuesRef.current.clear();
+    isMakingOfferMapRef.current.clear();
+
     if (socketRef.current) {
       socketRef.current.disconnect();
       socketRef.current = null;
     }
+
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
-    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+    setParticipants([]);
     setStatus('idle');
-    setRemoteParticipant(null);
   }, []);
 
   useEffect(() => {
@@ -377,33 +484,50 @@ export function useWebRtcRoom({
   // Controls
   const toggleMic = useCallback(() => {
     if (localStreamRef.current) {
-      const audioTracks = localStreamRef.current.getAudioTracks();
-      audioTracks.forEach((track) => {
-        track.enabled = !isMicOn;
+      const nextMicState = !isMicOn;
+      localStreamRef.current.getAudioTracks().forEach((track) => {
+        track.enabled = nextMicState;
       });
-      setIsMicOn(!isMicOn);
+      setIsMicOn(nextMicState);
+
+      if (socketRef.current?.connected) {
+        socketRef.current.emit('participant-media-status', {
+          meetingRoomId,
+          isMicOn: nextMicState,
+          isCameraOn,
+        });
+      }
     }
-  }, [isMicOn]);
+  }, [isMicOn, isCameraOn, meetingRoomId]);
 
   const toggleCamera = useCallback(() => {
     if (localStreamRef.current) {
-      const videoTracks = localStreamRef.current.getVideoTracks();
-      videoTracks.forEach((track) => {
-        track.enabled = !isCameraOn;
+      const nextCamState = !isCameraOn;
+      localStreamRef.current.getVideoTracks().forEach((track) => {
+        track.enabled = nextCamState;
       });
-      setIsCameraOn(!isCameraOn);
+      setIsCameraOn(nextCamState);
+
+      if (socketRef.current?.connected) {
+        socketRef.current.emit('participant-media-status', {
+          meetingRoomId,
+          isMicOn,
+          isCameraOn: nextCamState,
+        });
+      }
     }
-  }, [isCameraOn]);
+  }, [isCameraOn, isMicOn, meetingRoomId]);
 
   const toggleScreenShare = useCallback(async () => {
-    if (!peerRef.current || !localStreamRef.current) return;
+    if (!localStreamRef.current) return;
 
     if (isScreenSharing) {
-      const videoTrack = localStreamRef.current.getVideoTracks()[0];
-      const senders = peerRef.current.getSenders();
-      const videoSender = senders.find((s) => s.track?.kind === 'video');
-      if (videoSender && videoTrack) {
-        await videoSender.replaceTrack(videoTrack);
+      const originalVideoTrack = localStreamRef.current.getVideoTracks()[0];
+      for (const peer of peersRef.current.values()) {
+        const videoSender = peer.getSenders().find((s) => s.track?.kind === 'video');
+        if (videoSender && originalVideoTrack) {
+          await videoSender.replaceTrack(originalVideoTrack);
+        }
       }
       if (screenStreamRef.current) {
         screenStreamRef.current.getTracks().forEach((t) => t.stop());
@@ -421,10 +545,11 @@ export function useWebRtcRoom({
         screenStreamRef.current = screenStream;
         const screenTrack = screenStream.getVideoTracks()[0];
 
-        const senders = peerRef.current.getSenders();
-        const videoSender = senders.find((s) => s.track?.kind === 'video');
-        if (videoSender) {
-          await videoSender.replaceTrack(screenTrack);
+        for (const peer of peersRef.current.values()) {
+          const videoSender = peer.getSenders().find((s) => s.track?.kind === 'video');
+          if (videoSender) {
+            await videoSender.replaceTrack(screenTrack);
+          }
         }
 
         if (localVideoRef.current) {
@@ -444,13 +569,13 @@ export function useWebRtcRoom({
 
   return {
     status,
-    remoteParticipant,
+    myParticipantInfo,
+    participants,
     isMicOn,
     isCameraOn,
     isScreenSharing,
     permissionError,
     localVideoRef,
-    remoteVideoRef,
     toggleMic,
     toggleCamera,
     toggleScreenShare,

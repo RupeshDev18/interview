@@ -15,6 +15,10 @@ import {
   XCircle,
   X,
   RefreshCw,
+  ShieldCheck,
+  User,
+  Sparkles,
+  Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,10 +30,23 @@ import { adminService, type CompanyItem } from '@/services/admin.service';
 export default function AdminCompaniesPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<CompanyItem | null>(null);
 
-  const [form, setForm] = useState({
+  // Onboard Form
+  const [onboardForm, setOnboardForm] = useState({
+    companyName: '',
+    companyEmail: '',
+    phone: '',
+    website: '',
+    adminFirstName: '',
+    adminLastName: '',
+    adminEmail: '',
+    adminPassword: '',
+  });
+
+  // Edit form
+  const [editForm, setEditForm] = useState({
     name: '',
     email: '',
     phone: '',
@@ -41,16 +58,33 @@ export default function AdminCompaniesPage() {
     queryFn: () => adminService.listCompanies({ search: search.trim() || undefined }),
   });
 
-  const createMutation = useMutation({
-    mutationFn: adminService.createCompany,
-    onSuccess: () => {
+  const onboardMutation = useMutation({
+    mutationFn: adminService.onboardCompany,
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['admin-companies'] });
-      setIsModalOpen(false);
-      setForm({ name: '', email: '', phone: '', website: '' });
-      toast({ title: 'Company created successfully' });
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      setIsOnboardModalOpen(false);
+      setOnboardForm({
+        companyName: '',
+        companyEmail: '',
+        phone: '',
+        website: '',
+        adminFirstName: '',
+        adminLastName: '',
+        adminEmail: '',
+        adminPassword: '',
+      });
+      toast({
+        title: 'Organization Onboarded Successfully',
+        description: `Created ${data.company.name} and assigned ${data.adminUser.firstName} as Company Admin.`,
+      });
     },
-    onError: () => {
-      toast({ title: 'Failed to create company', variant: 'destructive' });
+    onError: (err: any) => {
+      toast({
+        title: 'Onboarding Failed',
+        description: err?.response?.data?.error?.message || 'Could not onboard organization.',
+        variant: 'destructive',
+      });
     },
   });
 
@@ -59,9 +93,8 @@ export default function AdminCompaniesPage() {
       adminService.updateCompany(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-companies'] });
-      setIsModalOpen(false);
       setEditingCompany(null);
-      toast({ title: 'Company updated' });
+      toast({ title: 'Company details updated' });
     },
     onError: () => {
       toast({ title: 'Failed to update company', variant: 'destructive' });
@@ -81,25 +114,26 @@ export default function AdminCompaniesPage() {
 
   const handleOpenEdit = (company: CompanyItem) => {
     setEditingCompany(company);
-    setForm({
+    setEditForm({
       name: company.name,
       email: company.email || '',
       phone: company.phone || '',
       website: company.website || '',
     });
-    setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleOnboardSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingCompany) {
-      updateMutation.mutate({
-        id: editingCompany.id,
-        data: form,
-      });
-    } else {
-      createMutation.mutate(form);
-    }
+    onboardMutation.mutate(onboardForm);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCompany) return;
+    updateMutation.mutate({
+      id: editingCompany.id,
+      data: editForm,
+    });
   };
 
   return (
@@ -111,10 +145,10 @@ export default function AdminCompaniesPage() {
             <div className="w-8 h-8 rounded-lg bg-theme-accent flex items-center justify-center text-white shadow-md shadow-black/10">
               <Building2 className="h-4 w-4" />
             </div>
-            Company Organizations & Multi-Tenancy
+            Organizations & Multi-Tenancy Management
           </h1>
           <p className="text-sm text-theme-muted mt-1">
-            Manage multi-tenant corporate accounts, interview limits, and organization details.
+            Onboard new corporate client organizations, provision Company Administrators, and enforce strict tenant boundaries.
           </p>
         </div>
 
@@ -132,14 +166,10 @@ export default function AdminCompaniesPage() {
 
           <Button
             size="sm"
-            onClick={() => {
-              setEditingCompany(null);
-              setForm({ name: '', email: '', phone: '', website: '' });
-              setIsModalOpen(true);
-            }}
-            className="gradient-theme-btn text-xs font-semibold gap-1.5"
+            onClick={() => setIsOnboardModalOpen(true)}
+            className="gradient-theme-btn text-xs font-semibold gap-1.5 shadow-md"
           >
-            <Plus className="h-4 w-4" /> Add Company
+            <Plus className="h-4 w-4" /> Onboard Organization
           </Button>
         </div>
       </div>
@@ -151,7 +181,7 @@ export default function AdminCompaniesPage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search organizations by name, domain, or email..."
+            placeholder="Search organizations by name, corporate domain, or contact email..."
             className="pl-9 bg-surface border-theme text-theme-primary text-xs"
           />
         </div>
@@ -167,8 +197,14 @@ export default function AdminCompaniesPage() {
       ) : companies.length === 0 ? (
         <div className="p-12 text-center rounded-2xl bg-card border border-theme space-y-3 shadow-sm">
           <Building2 className="h-10 w-10 text-theme-muted mx-auto opacity-50" />
-          <h3 className="text-sm font-semibold text-theme-primary">No companies found</h3>
-          <p className="text-xs text-theme-muted">Get started by creating your first company profile.</p>
+          <h3 className="text-sm font-semibold text-theme-primary">No organizations found</h3>
+          <p className="text-xs text-theme-muted">Get started by onboarding your first client organization.</p>
+          <Button
+            onClick={() => setIsOnboardModalOpen(true)}
+            className="text-xs gradient-theme-btn mt-2"
+          >
+            <Plus className="h-3.5 w-3.5 mr-1" /> Onboard First Organization
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -188,7 +224,7 @@ export default function AdminCompaniesPage() {
                         {company.name}
                       </h3>
                       <span className="text-[11px] text-theme-muted font-mono">
-                        Added {new Date(company.createdAt).toLocaleDateString()}
+                        Tenant ID: {company.id.substring(0, 13)}…
                       </span>
                     </div>
                   </div>
@@ -247,7 +283,7 @@ export default function AdminCompaniesPage() {
                   size="sm"
                   variant="ghost"
                   onClick={() => {
-                    if (confirm(`Are you sure you want to delete ${company.name}?`)) {
+                    if (confirm(`Are you sure you want to delete ${company.name}? This will revoke access for all associated users.`)) {
                       deleteMutation.mutate(company.id);
                     }
                   }}
@@ -261,31 +297,179 @@ export default function AdminCompaniesPage() {
         </div>
       )}
 
-      {/* Create / Edit Modal */}
-      {isModalOpen && (
+      {/* Onboard Organization Modal */}
+      {isOnboardModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="w-full max-w-xl bg-card border border-theme rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-theme flex items-center justify-between bg-surface-subtle">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-theme-accent text-white flex items-center justify-center shadow-sm">
+                  <Building2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-theme-primary">
+                    Onboard New Organization
+                  </h2>
+                  <p className="text-xs text-theme-muted font-mono">
+                    Provisions company entity + primary Company Administrator
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsOnboardModalOpen(false)}
+                className="p-1.5 rounded-lg text-theme-muted hover:text-theme-primary hover:bg-surface"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleOnboardSubmit} className="p-6 space-y-6 overflow-y-auto flex-1">
+              {/* Section 1: Company Details */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-semibold text-theme-accent uppercase tracking-wider font-mono flex items-center gap-1.5">
+                  <Building2 className="h-3.5 w-3.5" />
+                  1. Organization Profile
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1 md:col-span-2">
+                    <label className="text-xs font-semibold text-theme-primary">Company Name *</label>
+                    <Input
+                      required
+                      placeholder="e.g. Netflix, Stripe, Google"
+                      value={onboardForm.companyName}
+                      onChange={(e) => setOnboardForm({ ...onboardForm, companyName: e.target.value })}
+                      className="bg-surface border-theme text-theme-primary text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-theme-primary">Company Contact Email</label>
+                    <Input
+                      type="email"
+                      placeholder="contact@company.com"
+                      value={onboardForm.companyEmail}
+                      onChange={(e) => setOnboardForm({ ...onboardForm, companyEmail: e.target.value })}
+                      className="bg-surface border-theme text-theme-primary text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-theme-primary">Website URL</label>
+                    <Input
+                      placeholder="https://company.com"
+                      value={onboardForm.website}
+                      onChange={(e) => setOnboardForm({ ...onboardForm, website: e.target.value })}
+                      className="bg-surface border-theme text-theme-primary text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Company Admin Account */}
+              <div className="space-y-3 pt-4 border-t border-theme">
+                <h3 className="text-xs font-semibold text-theme-accent uppercase tracking-wider font-mono flex items-center gap-1.5">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  2. Primary Company Administrator
+                </h3>
+                <p className="text-[11px] text-theme-muted">
+                  This user will be assigned the <strong>COMPANY_ADMIN</strong> role with authority to manage team interviewers, candidates, and evaluations.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-theme-primary">Admin First Name *</label>
+                    <Input
+                      required
+                      placeholder="Jane"
+                      value={onboardForm.adminFirstName}
+                      onChange={(e) => setOnboardForm({ ...onboardForm, adminFirstName: e.target.value })}
+                      className="bg-surface border-theme text-theme-primary text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-theme-primary">Admin Last Name *</label>
+                    <Input
+                      required
+                      placeholder="Smith"
+                      value={onboardForm.adminLastName}
+                      onChange={(e) => setOnboardForm({ ...onboardForm, adminLastName: e.target.value })}
+                      className="bg-surface border-theme text-theme-primary text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1 md:col-span-2">
+                    <label className="text-xs font-semibold text-theme-primary">Admin Work Email *</label>
+                    <Input
+                      required
+                      type="email"
+                      placeholder="admin@company.com"
+                      value={onboardForm.adminEmail}
+                      onChange={(e) => setOnboardForm({ ...onboardForm, adminEmail: e.target.value })}
+                      className="bg-surface border-theme text-theme-primary text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1 md:col-span-2">
+                    <label className="text-xs font-semibold text-theme-primary">Initial Password</label>
+                    <Input
+                      type="password"
+                      placeholder="Leave blank for default (Admin@123456)"
+                      value={onboardForm.adminPassword}
+                      onChange={(e) => setOnboardForm({ ...onboardForm, adminPassword: e.target.value })}
+                      className="bg-surface border-theme text-theme-primary text-xs font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-theme">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsOnboardModalOpen(false)}
+                  className="border-theme text-theme-muted hover:text-theme-primary"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={onboardMutation.isPending}
+                  className="gradient-theme-btn font-semibold text-xs gap-1.5 shadow-md"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  {onboardMutation.isPending ? 'Provisioning Tenant…' : 'Onboard Organization & Admin'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Simple Edit Modal */}
+      {editingCompany && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in">
           <div className="w-full max-w-md bg-card border border-theme rounded-2xl shadow-2xl overflow-hidden">
             <div className="p-6 border-b border-theme flex items-center justify-between bg-surface-subtle">
               <h2 className="text-base font-bold text-theme-primary flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-theme-accent" />
-                {editingCompany ? 'Edit Company' : 'Register New Company'}
+                Edit Company Details
               </h2>
               <button
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => setEditingCompany(null)}
                 className="p-1 rounded-lg text-theme-muted hover:text-theme-primary hover:bg-surface"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-theme-primary">Company Name *</label>
                 <Input
                   required
-                  placeholder="e.g. Acme Corp"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                   className="bg-surface border-theme text-theme-primary text-xs"
                 />
               </div>
@@ -294,19 +478,8 @@ export default function AdminCompaniesPage() {
                 <label className="text-xs font-semibold text-theme-primary">Corporate Email</label>
                 <Input
                   type="email"
-                  placeholder="contact@acme.com"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="bg-surface border-theme text-theme-primary text-xs"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-theme-primary">Phone Number</label>
-                <Input
-                  placeholder="+1 (555) 000-0000"
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
                   className="bg-surface border-theme text-theme-primary text-xs"
                 />
               </div>
@@ -314,9 +487,8 @@ export default function AdminCompaniesPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-theme-primary">Website URL</label>
                 <Input
-                  placeholder="https://acme.com"
-                  value={form.website}
-                  onChange={(e) => setForm({ ...form, website: e.target.value })}
+                  value={editForm.website}
+                  onChange={(e) => setEditForm({ ...editForm, website: e.target.value })}
                   className="bg-surface border-theme text-theme-primary text-xs"
                 />
               </div>
@@ -325,21 +497,17 @@ export default function AdminCompaniesPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => setEditingCompany(null)}
                   className="border-theme text-theme-muted hover:text-theme-primary"
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
-                  disabled={createMutation.isPending || updateMutation.isPending}
+                  disabled={updateMutation.isPending}
                   className="gradient-theme-btn font-semibold text-xs"
                 >
-                  {createMutation.isPending || updateMutation.isPending
-                    ? 'Saving…'
-                    : editingCompany
-                    ? 'Update Company'
-                    : 'Create Company'}
+                  {updateMutation.isPending ? 'Saving…' : 'Update Company'}
                 </Button>
               </div>
             </form>

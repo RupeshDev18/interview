@@ -10,12 +10,13 @@ export const registerSchema = z.object({
     .regex(/[0-9]/, 'Password must contain at least one number'),
   firstName: z.string().min(1, 'First name is required').max(100).trim(),
   lastName: z.string().min(1, 'Last name is required').max(100).trim(),
+  companyName: z.string().max(100).optional(),
   phone: z.string().optional(),
   companyId: z.string().uuid('Invalid company ID').optional(),
   role: z
     .enum(['COMPANY_ADMIN', 'RECRUITER', 'INTERVIEWER'])
     .optional()
-    .default('RECRUITER'),
+    .default('COMPANY_ADMIN'),
 });
 
 export const loginSchema = z.object({

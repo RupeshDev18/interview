@@ -3,6 +3,7 @@ import { interviewersController } from './interviewers.controller';
 import { authenticate } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
 import { validate } from '../../middleware/validate';
+import { createInterviewerSchema } from './interviewers.validator';
 import { availabilityController } from '../availability/availability.controller';
 import { createExceptionSchema, dateRangeQuerySchema, replaceRulesSchema, slotsQuerySchema } from '../availability/availability.validator';
 
@@ -14,6 +15,13 @@ router.get(
   '/',
   authorize('ADMIN', 'COMPANY_ADMIN', 'RECRUITER', 'INTERVIEWER'),
   interviewersController.list,
+);
+
+router.post(
+  '/',
+  authorize('ADMIN', 'COMPANY_ADMIN'),
+  validate(createInterviewerSchema),
+  interviewersController.create,
 );
 
 router.get('/me', authorize('INTERVIEWER'), interviewersController.getMine);

@@ -13,8 +13,9 @@ import {
 
 const router = Router();
 
-// Public Candidate Meeting Details (No Login Required)
+// Public Candidate & Guest Meeting Details (No Login Required)
 router.get('/candidate/join/:token', interviewsController.getCandidateJoinDetails);
+router.get('/guest/join/:token', interviewsController.getGuestJoinDetails);
 
 router.use(authenticate);
 
@@ -71,10 +72,18 @@ router.patch(
   interviewsController.updateQuestionNotes,
 );
 
+// Candidate Join Link Generation
 router.post(
   '/:id/candidate-link',
-  authorize('ADMIN', 'COMPANY_ADMIN', 'RECRUITER'),
+  authorize('ADMIN', 'COMPANY_ADMIN', 'RECRUITER', 'INTERVIEWER'),
   interviewsController.createCandidateLink,
+);
+
+// Guest / HR Observer Link Generation
+router.post(
+  '/:id/guest-link',
+  authorize('ADMIN', 'COMPANY_ADMIN', 'RECRUITER', 'INTERVIEWER'),
+  interviewsController.createGuestLink,
 );
 
 export { router as interviewsRoutes };
