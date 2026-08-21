@@ -6,7 +6,26 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seeding database...');
 
-  // ─── Admin user ────────────────────────────────────────────────────────
+  // ─── Super Admin User (Rupesh Yadav) ────────────────────────────────────
+  const superAdminPassword = await argon2.hash('admin123');
+  const superAdmin = await prisma.user.upsert({
+    where: { email: 'rupesh.dev2002@gmail.com' },
+    update: {
+      role: UserRole.ADMIN,
+      isActive: true,
+    },
+    create: {
+      email: 'rupesh.dev2002@gmail.com',
+      passwordHash: superAdminPassword,
+      firstName: 'Rupesh',
+      lastName: 'Yadav',
+      role: UserRole.ADMIN,
+      isActive: true,
+    },
+  });
+  console.log('✅ Super Admin user:', superAdmin.email);
+
+  // ─── Platform Admin user ────────────────────────────────────────────────
   const adminPassword = await argon2.hash('Admin@123456');
   const admin = await prisma.user.upsert({
     where: { email: 'admin@intvwplt.com' },
@@ -20,7 +39,7 @@ async function main() {
       isActive: true,
     },
   });
-  console.log('✅ Admin user:', admin.email);
+  console.log('✅ Platform Admin user:', admin.email);
 
   // ─── Demo company ──────────────────────────────────────────────────────
   const company = await prisma.company.upsert({
@@ -54,12 +73,12 @@ async function main() {
   console.log('✅ Company admin:', companyAdmin.email);
 
   // ─── Recruiter ─────────────────────────────────────────────────────────
-  const recruiterPassword = await argon2.hash('Recruiter@123456');
+  const recruiterPassword = await argon2.hash('admin123');
   const recruiter = await prisma.user.upsert({
-    where: { email: 'recruiter@acmecorp.com' },
+    where: { email: 'recruiter@acme.com' },
     update: {},
     create: {
-      email: 'recruiter@acmecorp.com',
+      email: 'recruiter@acme.com',
       passwordHash: recruiterPassword,
       firstName: 'Alice',
       lastName: 'Johnson',
@@ -184,6 +203,7 @@ async function main() {
   // ─── Question bank samples ─────────────────────────────────────────────
   const questions = [
     {
+      id: 'qb-node-0001',
       category: 'Node.js',
       technology: 'Node.js',
       question: 'Explain the Node.js event loop and how it handles asynchronous operations.',
@@ -192,6 +212,7 @@ async function main() {
       tags: ['event-loop', 'async', 'concurrency'],
     },
     {
+      id: 'qb-node-0002',
       category: 'Node.js',
       technology: 'Node.js',
       question: 'What is the difference between process.nextTick() and setImmediate()?',
@@ -200,6 +221,7 @@ async function main() {
       tags: ['event-loop', 'timers'],
     },
     {
+      id: 'qb-postgres-0001',
       category: 'PostgreSQL',
       technology: 'PostgreSQL',
       question: 'Explain the difference between B-tree and GIN indexes in PostgreSQL.',
@@ -208,6 +230,7 @@ async function main() {
       tags: ['indexes', 'performance'],
     },
     {
+      id: 'qb-sys-0001',
       category: 'System Design',
       technology: 'System Design',
       question: 'Design a URL shortener service like bit.ly.',
@@ -216,6 +239,7 @@ async function main() {
       tags: ['system-design', 'scalability'],
     },
     {
+      id: 'qb-react-0001',
       category: 'React',
       technology: 'React',
       question: 'Explain the difference between useMemo and useCallback hooks.',
@@ -226,8 +250,10 @@ async function main() {
   ];
 
   for (const q of questions) {
-    await prisma.questionBank.create({ data: { ...q, isActive: true } }).catch(() => {
-      // Ignore duplicate on re-seed
+    await prisma.questionBank.upsert({
+      where: { id: q.id },
+      update: {},
+      create: { ...q, isActive: true },
     });
   }
   console.log('✅ Question bank seeded');
@@ -347,9 +373,10 @@ async function main() {
 
   console.log('\n🎉 Seed complete!');
   console.log('\nDefault credentials:');
+  console.log('  Super Admin: rupesh.dev2002@gmail.com / admin123');
   console.log('  Admin:       admin@intvwplt.com     / Admin@123456');
   console.log('  Co. Admin:   admin@acmecorp.com     / Company@123456');
-  console.log('  Recruiter:   recruiter@acmecorp.com / Recruiter@123456');
+  console.log('  Recruiter:   recruiter@acme.com     / admin123');
   console.log('  Interviewer: interviewer@intvwplt.com / Interview@123456');
 }
 

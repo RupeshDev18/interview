@@ -6,7 +6,7 @@ services:
     name: intvwplt-api
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build --workspace=@intvwplt/shared && npx prisma generate --schema=apps/api/prisma/schema.prisma && npx prisma db push --schema=apps/api/prisma/schema.prisma && npm run build --workspace=@intvwplt/api
+    buildCommand: npm install && npm run build --workspace=@intvwplt/shared && npx prisma generate --schema=apps/api/prisma/schema.prisma && npx prisma db push --schema=apps/api/prisma/schema.prisma && npx tsx apps/api/prisma/seed.ts && npm run build --workspace=@intvwplt/api
     startCommand: npm run start --workspace=@intvwplt/api
 
     envVars:
