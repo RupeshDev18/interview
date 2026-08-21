@@ -18,6 +18,9 @@ import {
   Sparkles,
   Wifi,
   WifiOff,
+  Code2,
+  LayoutGrid,
+  Columns,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -26,7 +29,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { interviewsService } from '@/services/interviews.service';
 import { useWebRtcRoom } from '@/hooks/use-webrtc-room';
 import { VideoGrid } from '@/components/interview/VideoGrid';
+import { CollaborativeCodeEditor } from '@/components/interview/CollaborativeCodeEditor';
 import type { CandidateJoinDetailsDto } from '@intvwplt/shared';
+
+type ViewMode = 'split' | 'code' | 'video';
 
 export default function CandidateJoinPage() {
   const { token } = useParams<{ token: string }>();
@@ -36,6 +42,7 @@ export default function CandidateJoinPage() {
   const [interviewData, setInterviewData] = useState<CandidateJoinDetailsDto | null>(null);
   const [hasJoinedLobby, setHasJoinedLobby] = useState(false);
   const [isCallEnded, setIsCallEnded] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('split');
 
   // Pre-join preview state
   const previewVideoRef = useRef<HTMLVideoElement>(null);
@@ -99,26 +106,7 @@ export default function CandidateJoinPage() {
     };
   }, [interviewData, hasJoinedLobby]);
 
-  // Toggle preview mic/cam
-  const togglePreviewMic = () => {
-    if (previewStream) {
-      previewStream.getAudioTracks().forEach((t) => {
-        t.enabled = !previewMic;
-      });
-      setPreviewMic(!previewMic);
-    }
-  };
-
-  const togglePreviewCam = () => {
-    if (previewStream) {
-      previewStream.getVideoTracks().forEach((t) => {
-        t.enabled = !previewCam;
-      });
-      setPreviewCam(!previewCam);
-    }
-  };
-
-  // WebRTC room hook for multi-peer mesh call
+  // Multi-peer WebRTC room hook (triggered once candidate leaves lobby)
   const {
     status,
     participants,
@@ -127,31 +115,48 @@ export default function CandidateJoinPage() {
     isScreenSharing,
     permissionError,
     localVideoRef,
+    socket,
     toggleMic,
     toggleCamera,
     toggleScreenShare,
     disconnect,
   } = useWebRtcRoom({
     meetingRoomId: interviewData?.meetingRoomId || '',
-    candidateToken: token,
+    candidateToken: token || undefined,
     autoConnect: hasJoinedLobby,
   });
 
-  // Call timer interval
+  // Start in-call elapsed timer
   useEffect(() => {
     if (!hasJoinedLobby || isCallEnded) return;
-
-    const timer = setInterval(() => {
+    const interval = setInterval(() => {
       setElapsedSeconds((prev) => prev + 1);
     }, 1000);
-
-    return () => clearInterval(timer);
+    return () => clearInterval(interval);
   }, [hasJoinedLobby, isCallEnded]);
 
+  const togglePreviewMic = () => {
+    if (previewStream) {
+      previewStream.getAudioTracks().forEach((track) => {
+        track.enabled = !previewMic;
+      });
+    }
+    setPreviewMic(!previewMic);
+  };
+
+  const togglePreviewCam = () => {
+    if (previewStream) {
+      previewStream.getVideoTracks().forEach((track) => {
+        track.enabled = !previewCam;
+      });
+    }
+    setPreviewCam(!previewCam);
+  };
+
   const handleJoinCall = () => {
+    // Stop preview stream so WebRTC hook can claim camera
     if (previewStream) {
       previewStream.getTracks().forEach((track) => track.stop());
-      setPreviewStream(null);
     }
     setHasJoinedLobby(true);
   };
@@ -161,41 +166,43 @@ export default function CandidateJoinPage() {
     setIsCallEnded(true);
   };
 
-  const formatTimer = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  const formatTimer = (secs: number) => {
+    const mins = Math.floor(secs / 60)
+      .toString()
+      .padStart(2, '0');
+    const remSecs = (secs % 60).toString().padStart(2, '0');
+    return `${mins}:${remSecs}`;
   };
 
   // 1. Loading State
   if (isLoading) {
     return (
       <div className="min-h-screen bg-theme-bg flex items-center justify-center p-6 text-theme-primary">
-        <div className="w-full max-w-md space-y-4 p-8 rounded-2xl bg-card border border-theme shadow-sm">
-          <Skeleton className="h-8 w-48 mx-auto bg-surface-subtle" />
+        <div className="w-full max-w-md text-center space-y-4 p-8 rounded-2xl bg-card border border-theme shadow-sm">
+          <Skeleton className="h-12 w-12 rounded-full mx-auto bg-surface-subtle" />
+          <Skeleton className="h-6 w-48 mx-auto bg-surface-subtle" />
           <Skeleton className="h-4 w-64 mx-auto bg-surface-subtle" />
-          <Skeleton className="h-64 w-full rounded-xl bg-surface-subtle" />
         </div>
       </div>
     );
   }
 
-  // 2. Error State
+  // 2. Error State (Invalid/Expired Token)
   if (error || !interviewData) {
     return (
       <div className="min-h-screen bg-theme-bg flex items-center justify-center p-6 text-theme-primary">
-        <div className="w-full max-w-md text-center p-8 rounded-2xl bg-card border border-theme space-y-4 shadow-sm">
-          <div className="w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-500 mx-auto flex items-center justify-center">
+        <div className="w-full max-w-md text-center p-8 rounded-2xl bg-card border border-rose-500/30 space-y-4 shadow-sm animate-in fade-in">
+          <div className="w-14 h-14 rounded-full bg-rose-500/15 text-rose-500 mx-auto flex items-center justify-center">
             <AlertCircle className="h-7 w-7" />
           </div>
-          <h1 className="text-xl font-bold text-theme-primary">Interview Link Invalid</h1>
-          <p className="text-sm text-theme-muted leading-relaxed">{error}</p>
+          <h1 className="text-lg font-bold text-theme-primary">Interview Link Unavailable</h1>
+          <p className="text-xs text-theme-muted leading-relaxed">{error}</p>
         </div>
       </div>
     );
   }
 
-  // 3. Call Ended Screen
+  // 3. Call Ended State
   if (isCallEnded) {
     return (
       <div className="min-h-screen bg-theme-bg flex items-center justify-center p-6 text-theme-primary">
@@ -351,11 +358,13 @@ export default function CandidateJoinPage() {
     );
   }
 
-  // 5. In-Meeting Video Room
+  // 5. In-Meeting Video Room with Collaborative Code Editor
+  const candidateFullName = `${interviewData.candidate.firstName} ${interviewData.candidate.lastName}`;
+
   return (
     <div className="min-h-screen bg-theme-bg flex flex-col text-theme-primary">
       {/* Meeting Top Bar */}
-      <header className="px-6 py-3 bg-surface border-b border-theme flex items-center justify-between">
+      <header className="px-6 py-2.5 bg-surface border-b border-theme flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-theme-accent flex items-center justify-center text-white font-bold text-xs shadow-md">
             {interviewData.company.name.charAt(0)}
@@ -370,8 +379,46 @@ export default function CandidateJoinPage() {
           </div>
         </div>
 
+        {/* View Mode Controls */}
+        <div className="flex items-center gap-1 bg-surface-subtle p-1 rounded-xl border border-theme">
+          <button
+            onClick={() => setViewMode('split')}
+            className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+              viewMode === 'split'
+                ? 'bg-theme-accent text-white shadow-sm'
+                : 'text-theme-muted hover:text-theme-primary'
+            }`}
+          >
+            <Columns className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Split View</span>
+          </button>
+
+          <button
+            onClick={() => setViewMode('code')}
+            className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+              viewMode === 'code'
+                ? 'bg-theme-accent text-white shadow-sm'
+                : 'text-theme-muted hover:text-theme-primary'
+            }`}
+          >
+            <Code2 className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Code Focus</span>
+          </button>
+
+          <button
+            onClick={() => setViewMode('video')}
+            className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+              viewMode === 'video'
+                ? 'bg-theme-accent text-white shadow-sm'
+                : 'text-theme-muted hover:text-theme-primary'
+            }`}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Video Focus</span>
+          </button>
+        </div>
+
         <div className="flex items-center gap-3">
-          {/* Connection status badge */}
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-subtle border border-theme text-xs">
             {status === 'connected' ? (
               <>
@@ -393,89 +440,141 @@ export default function CandidateJoinPage() {
             )}
           </div>
 
-          {/* Call Elapsed Timer */}
           <div className="px-3 py-1 rounded-full bg-surface-subtle border border-theme text-xs font-mono text-theme-primary font-bold">
             {formatTimer(elapsedSeconds)}
           </div>
         </div>
       </header>
 
-      {/* Main Video Stage */}
-      <main className="flex-1 p-6 flex flex-col items-center justify-center space-y-4">
+      {/* Main Interactive Stage */}
+      <main className="flex-1 p-4 flex flex-col justify-between space-y-3">
         {permissionError && (
-          <div className="w-full max-w-5xl p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-300 text-xs flex items-center gap-2">
+          <div className="w-full p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-300 text-xs flex items-center gap-2">
             <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
             <span>{permissionError}</span>
           </div>
         )}
 
-        <div className="w-full max-w-6xl flex-1 flex flex-col justify-center">
-          <VideoGrid
-            localVideoRef={localVideoRef}
-            localName={`${interviewData.candidate.firstName} ${interviewData.candidate.lastName}`}
-            localRole="CANDIDATE"
-            isLocalMicOn={isMicOn}
-            isLocalCameraOn={isCameraOn}
-            isScreenSharing={isScreenSharing}
-            participants={participants}
-            status={status}
-            emptyWaitingMessage="Waiting for interviewers and panel to join..."
-          />
+        <div className="w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-[560px]">
+          {/* Main Area: Code Editor or Video Stage based on viewMode */}
+          <div
+            className={`${
+              viewMode === 'video'
+                ? 'lg:col-span-12'
+                : viewMode === 'code'
+                ? 'lg:col-span-9'
+                : 'lg:col-span-8'
+            } flex flex-col min-h-[500px]`}
+          >
+            {viewMode === 'video' ? (
+              <div className="flex-1 flex flex-col justify-center">
+                <VideoGrid
+                  localVideoRef={localVideoRef}
+                  localName={candidateFullName}
+                  localRole="CANDIDATE"
+                  isLocalMicOn={isMicOn}
+                  isLocalCameraOn={isCameraOn}
+                  isScreenSharing={isScreenSharing}
+                  participants={participants}
+                  status={status}
+                  emptyWaitingMessage="Waiting for interviewers and panel to join..."
+                />
+              </div>
+            ) : (
+              <CollaborativeCodeEditor
+                meetingRoomId={interviewData.meetingRoomId}
+                socket={socket}
+                userName={candidateFullName}
+              />
+            )}
+          </div>
+
+          {/* Right Sidebar: Compact Video Grid in Split/Code mode */}
+          {viewMode !== 'video' && (
+            <div
+              className={`${
+                viewMode === 'code' ? 'lg:col-span-3' : 'lg:col-span-4'
+              } flex flex-col justify-start gap-3`}
+            >
+              <div className="h-64 rounded-2xl overflow-hidden border border-theme bg-card shadow-sm">
+                <VideoGrid
+                  localVideoRef={localVideoRef}
+                  localName={candidateFullName}
+                  localRole="CANDIDATE"
+                  isLocalMicOn={isMicOn}
+                  isLocalCameraOn={isCameraOn}
+                  isScreenSharing={isScreenSharing}
+                  participants={participants}
+                  status={status}
+                  emptyWaitingMessage="Waiting for interviewers..."
+                />
+              </div>
+
+              <div className="p-4 rounded-2xl bg-card border border-theme text-xs text-theme-muted space-y-2">
+                <h4 className="font-bold text-theme-primary flex items-center gap-1.5">
+                  <Code2 className="h-4 w-4 text-theme-accent" /> Live Technical Interview
+                </h4>
+                <p className="leading-relaxed">
+                  Your code and console outputs are synchronized in real time with the interviewer panel.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
       {/* Floating Bottom Control Bar */}
-      <footer className="py-4 px-6 bg-surface border-t border-theme flex items-center justify-center gap-4">
+      <footer className="py-3 px-6 bg-surface border-t border-theme flex items-center justify-center gap-3">
         <Button
           variant="outline"
-          size="lg"
+          size="sm"
           onClick={toggleMic}
-          className={`rounded-full w-12 h-12 p-0 border transition-all ${
+          className={`rounded-full w-10 h-10 p-0 border transition-all ${
             isMicOn
               ? 'border-theme bg-surface text-theme-primary hover:bg-surface-subtle'
               : 'border-rose-500/50 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20'
           }`}
           title={isMicOn ? 'Mute Microphone' : 'Unmute Microphone'}
         >
-          {isMicOn ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+          {isMicOn ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
         </Button>
 
         <Button
           variant="outline"
-          size="lg"
+          size="sm"
           onClick={toggleCamera}
-          className={`rounded-full w-12 h-12 p-0 border transition-all ${
+          className={`rounded-full w-10 h-10 p-0 border transition-all ${
             isCameraOn
               ? 'border-theme bg-surface text-theme-primary hover:bg-surface-subtle'
               : 'border-rose-500/50 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20'
           }`}
           title={isCameraOn ? 'Turn Off Camera' : 'Turn On Camera'}
         >
-          {isCameraOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+          {isCameraOn ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
         </Button>
 
         <Button
           variant="outline"
-          size="lg"
+          size="sm"
           onClick={toggleScreenShare}
-          className={`rounded-full w-12 h-12 p-0 border transition-all ${
+          className={`rounded-full w-10 h-10 p-0 border transition-all ${
             isScreenSharing
               ? 'border-theme bg-theme-accent text-white'
               : 'border-theme bg-surface text-theme-primary hover:bg-surface-subtle'
           }`}
           title={isScreenSharing ? 'Stop Screen Sharing' : 'Share Screen'}
         >
-          <ScreenShare className="h-5 w-5" />
+          <ScreenShare className="h-4 w-4" />
         </Button>
 
         <Button
           variant="destructive"
-          size="lg"
+          size="sm"
           onClick={handleEndCall}
-          className="rounded-full px-6 h-12 bg-rose-600 hover:bg-rose-700 text-white font-bold gap-2 shadow-md shadow-rose-600/30"
+          className="rounded-full px-5 h-10 bg-rose-600 hover:bg-rose-700 text-white font-bold gap-1.5 shadow-md shadow-rose-600/30 text-xs"
         >
-          <PhoneOff className="h-5 w-5" />
-          <span>Leave</span>
+          <PhoneOff className="h-4 w-4" />
+          <span>Leave Interview</span>
         </Button>
       </footer>
     </div>

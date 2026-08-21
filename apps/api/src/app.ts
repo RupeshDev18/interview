@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import hpp from 'hpp';
 
 import { env } from './config/env';
+import { prisma } from './lib/prisma';
 import { requestLogger } from './middleware/requestLogger';
 import { apiRateLimiter } from './middleware/rateLimiter';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
@@ -69,15 +70,29 @@ export function createApp(): express.Application {
   // ─── Trust proxy (needed behind load balancer / Docker) ──────────────────
   app.set('trust proxy', 1);
 
-  // ─── Health check ────────────────────────────────────────────────────────
-  app.get('/health', (_req, res) => {
-    res.json({
-      status: 'ok',
+  // ─── Health check (Root & API prefix with DB status) ──────────────────────
+  const healthHandler = async (_req: express.Request, res: express.Response) => {
+    let dbStatus = 'ok';
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+    } catch {
+      dbStatus = 'disconnected';
+    }
+
+    const isHealthy = dbStatus === 'ok';
+    res.status(isHealthy ? 200 : 503).json({
+      status: isHealthy ? 'healthy' : 'degraded',
       timestamp: new Date().toISOString(),
       version: process.env.npm_package_version ?? '1.0.0',
       environment: env.NODE_ENV,
+      services: {
+        database: dbStatus,
+      },
     });
-  });
+  };
+
+  app.get('/health', healthHandler);
+  app.get(`${env.API_PREFIX}/health`, healthHandler);
 
   // ─── API Routes ──────────────────────────────────────────────────────────
   app.use(`${env.API_PREFIX}/auth`, authRoutes);

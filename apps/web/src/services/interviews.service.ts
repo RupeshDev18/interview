@@ -1,15 +1,14 @@
-import axios from 'axios';
 import { apiClient } from '@/lib/api-client';
+import axios from 'axios';
 import type {
   InterviewDto,
   CreateInterviewDto,
   UpdateInterviewDto,
   UpdateInterviewNotesDto,
   UpdateQuestionNotesDto,
-  InterviewFiltersDto,
-  PaginatedResponse,
-  ApiSuccessResponse,
   InterviewStatus,
+  InterviewFiltersDto,
+  ApiSuccessResponse,
   CandidateJoinDetailsDto,
   CreateGuestLinkDto,
   GuestJoinDetailsDto,
@@ -20,38 +19,44 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 export const interviewsService = {
   async list(filters?: InterviewFiltersDto & { page?: number; limit?: number }) {
     const params = new URLSearchParams();
-    if (filters) {
-      if (filters.page) params.append('page', filters.page.toString());
-      if (filters.limit) params.append('limit', filters.limit.toString());
-      if (filters.companyId) params.append('companyId', filters.companyId);
-      if (filters.candidateId) params.append('candidateId', filters.candidateId);
-      if (filters.interviewerId) params.append('interviewerId', filters.interviewerId);
-      if (filters.status) params.append('status', filters.status);
-      if (filters.roundNumber) params.append('roundNumber', filters.roundNumber.toString());
-      if (filters.startDate) params.append('from', filters.startDate);
-      if (filters.endDate) params.append('to', filters.endDate);
-      if (filters.search) params.append('search', filters.search);
-    }
+    if (filters?.candidateId) params.append('candidateId', filters.candidateId);
+    if (filters?.interviewerId) params.append('interviewerId', filters.interviewerId);
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.search) params.append('search', filters.search);
+    if (filters?.page) params.append('page', String(filters.page));
+    if (filters?.limit) params.append('limit', String(filters.limit));
 
     const response = await apiClient.get<any>(
       `/interviews?${params.toString()}`,
     );
     const body = response.data;
     if (body?.data?.items) {
-      return body.data as PaginatedResponse<InterviewDto>;
+      return {
+        items: body.data.items as InterviewDto[],
+        pagination: body.data.pagination,
+      };
     }
-    if (body?.items) {
-      return body as PaginatedResponse<InterviewDto>;
+    if (Array.isArray(body?.data)) {
+      return {
+        items: body.data as InterviewDto[],
+        pagination: { page: 1, limit: body.data.length, total: body.data.length, totalPages: 1 },
+      };
     }
-    return {
-      items: Array.isArray(body?.data) ? body.data : Array.isArray(body) ? body : [],
-      pagination: body?.pagination || { page: 1, limit: 20, total: 0, totalPages: 1 },
-    };
+    return { items: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } };
   },
 
   async getById(id: string) {
     const response = await apiClient.get<ApiSuccessResponse<InterviewDto>>(
       `/interviews/${id}`,
+    );
+    return response.data.data;
+  },
+
+  async getByMeetingRoomId(meetingRoomId: string) {
+    const response = await apiClient.get<ApiSuccessResponse<InterviewDto>>(
+      `/interviews/room/${meetingRoomId}`,
     );
     return response.data.data;
   },
@@ -107,6 +112,12 @@ export const interviewsService = {
     return response.data.data;
   },
 
+  async generateCandidateLink(id: string) {
+    const data = await this.createCandidateLink(id);
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    return { ...data, link: `${origin}/interview/join/${data.token}` };
+  },
+
   async getCandidateJoinDetails(token: string) {
     const response = await axios.get<ApiSuccessResponse<CandidateJoinDetailsDto>>(
       `${BASE_URL}/api/v1/interviews/candidate/join/${token}`,
@@ -124,6 +135,12 @@ export const interviewsService = {
       }>
     >(`/interviews/${id}/guest-link`, data || {});
     return response.data.data;
+  },
+
+  async generateGuestLink(id: string, data?: CreateGuestLinkDto) {
+    const res = await this.createGuestLink(id, data);
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    return { ...res, link: `${origin}/interview/guest/${res.token}` };
   },
 
   async getGuestJoinDetails(token: string) {

@@ -285,8 +285,11 @@ export function useWebRtcRoom({
 
             // If other participants already in room, initialize peer connection and send offer
             if (response.existingParticipants && response.existingParticipants.length > 0) {
+              const filtered = response.existingParticipants.filter(
+                (p) => p.socketId !== response.participant?.socketId && p.socketId !== socket.id,
+              );
               setParticipants(
-                response.existingParticipants.map((p) => ({
+                filtered.map((p) => ({
                   socketId: p.socketId,
                   name: p.name,
                   role: p.role,
@@ -296,7 +299,7 @@ export function useWebRtcRoom({
                 })),
               );
 
-              for (const existingPeer of response.existingParticipants) {
+              for (const existingPeer of filtered) {
                 await sendOfferToRemote(existingPeer.socketId, socket);
               }
             }
@@ -308,6 +311,7 @@ export function useWebRtcRoom({
       socket.on(
         'participant-joined',
         (data: { socketId: string; role?: string; name?: string }) => {
+          if (data.socketId === socket.id) return;
           setParticipants((prev) => {
             if (prev.some((p) => p.socketId === data.socketId)) return prev;
             return [
@@ -576,6 +580,7 @@ export function useWebRtcRoom({
     isScreenSharing,
     permissionError,
     localVideoRef,
+    socket: socketRef.current,
     toggleMic,
     toggleCamera,
     toggleScreenShare,

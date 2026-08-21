@@ -22,6 +22,9 @@ import {
   Users,
   Copy,
   Check,
+  Code2,
+  Columns,
+  LayoutGrid,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -31,7 +34,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { interviewsService } from '@/services/interviews.service';
 import { useWebRtcRoom } from '@/hooks/use-webrtc-room';
 import { VideoGrid } from '@/components/interview/VideoGrid';
+import { CollaborativeCodeEditor } from '@/components/interview/CollaborativeCodeEditor';
 import type { GuestJoinDetailsDto } from '@intvwplt/shared';
+
+type ViewMode = 'split' | 'code' | 'video';
 
 export default function GuestJoinPage() {
   const { token } = useParams<{ token: string }>();
@@ -42,6 +48,7 @@ export default function GuestJoinPage() {
   const [guestName, setGuestName] = useState('HR Observer');
   const [hasJoinedLobby, setHasJoinedLobby] = useState(false);
   const [isCallEnded, setIsCallEnded] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('split');
 
   // Pre-join preview state
   const previewVideoRef = useRef<HTMLVideoElement>(null);
@@ -83,7 +90,7 @@ export default function GuestJoinPage() {
     loadGuestInterview();
   }, [token]);
 
-  // Pre-join webcam preview
+  // Handle pre-join webcam preview
   useEffect(() => {
     if (!interviewData || hasJoinedLobby) return;
 
@@ -99,7 +106,7 @@ export default function GuestJoinPage() {
           previewVideoRef.current.srcObject = stream;
         }
       } catch (err) {
-        console.warn('Camera/Mic permission not granted in lobby:', err);
+        console.warn('Camera/Mic permission not granted in guest lobby:', err);
       }
     }
 
@@ -112,25 +119,7 @@ export default function GuestJoinPage() {
     };
   }, [interviewData, hasJoinedLobby]);
 
-  const togglePreviewMic = () => {
-    if (previewStream) {
-      previewStream.getAudioTracks().forEach((t) => {
-        t.enabled = !previewMic;
-      });
-      setPreviewMic(!previewMic);
-    }
-  };
-
-  const togglePreviewCam = () => {
-    if (previewStream) {
-      previewStream.getVideoTracks().forEach((t) => {
-        t.enabled = !previewCam;
-      });
-      setPreviewCam(!previewCam);
-    }
-  };
-
-  // Multi-Peer WebRTC room hook
+  // Multi-peer WebRTC room hook (triggered once guest leaves lobby)
   const {
     status,
     participants,
@@ -139,31 +128,47 @@ export default function GuestJoinPage() {
     isScreenSharing,
     permissionError,
     localVideoRef,
+    socket,
     toggleMic,
     toggleCamera,
     toggleScreenShare,
     disconnect,
   } = useWebRtcRoom({
     meetingRoomId: interviewData?.meetingRoomId || '',
-    guestToken: token,
+    guestToken: token || undefined,
     autoConnect: hasJoinedLobby,
   });
 
-  // Call timer interval
+  // Start in-call elapsed timer
   useEffect(() => {
     if (!hasJoinedLobby || isCallEnded) return;
-
-    const timer = setInterval(() => {
+    const interval = setInterval(() => {
       setElapsedSeconds((prev) => prev + 1);
     }, 1000);
-
-    return () => clearInterval(timer);
+    return () => clearInterval(interval);
   }, [hasJoinedLobby, isCallEnded]);
+
+  const togglePreviewMic = () => {
+    if (previewStream) {
+      previewStream.getAudioTracks().forEach((track) => {
+        track.enabled = !previewMic;
+      });
+    }
+    setPreviewMic(!previewMic);
+  };
+
+  const togglePreviewCam = () => {
+    if (previewStream) {
+      previewStream.getVideoTracks().forEach((track) => {
+        track.enabled = !previewCam;
+      });
+    }
+    setPreviewCam(!previewCam);
+  };
 
   const handleJoinCall = () => {
     if (previewStream) {
       previewStream.getTracks().forEach((track) => track.stop());
-      setPreviewStream(null);
     }
     setHasJoinedLobby(true);
   };
@@ -179,20 +184,22 @@ export default function GuestJoinPage() {
     setTimeout(() => setCopiedNotes(false), 2000);
   };
 
-  const formatTimer = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  const formatTimer = (secs: number) => {
+    const mins = Math.floor(secs / 60)
+      .toString()
+      .padStart(2, '0');
+    const remSecs = (secs % 60).toString().padStart(2, '0');
+    return `${mins}:${remSecs}`;
   };
 
   // 1. Loading State
   if (isLoading) {
     return (
       <div className="min-h-screen bg-theme-bg flex items-center justify-center p-6 text-theme-primary">
-        <div className="w-full max-w-md space-y-4 p-8 rounded-2xl bg-card border border-theme shadow-sm">
-          <Skeleton className="h-8 w-48 mx-auto bg-surface-subtle" />
+        <div className="w-full max-w-md text-center space-y-4 p-8 rounded-2xl bg-card border border-theme shadow-sm">
+          <Skeleton className="h-12 w-12 rounded-full mx-auto bg-surface-subtle" />
+          <Skeleton className="h-6 w-48 mx-auto bg-surface-subtle" />
           <Skeleton className="h-4 w-64 mx-auto bg-surface-subtle" />
-          <Skeleton className="h-64 w-full rounded-xl bg-surface-subtle" />
         </div>
       </div>
     );
@@ -202,49 +209,48 @@ export default function GuestJoinPage() {
   if (error || !interviewData) {
     return (
       <div className="min-h-screen bg-theme-bg flex items-center justify-center p-6 text-theme-primary">
-        <div className="w-full max-w-md text-center p-8 rounded-2xl bg-card border border-theme space-y-4 shadow-sm">
-          <div className="w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-500 mx-auto flex items-center justify-center">
+        <div className="w-full max-w-md text-center p-8 rounded-2xl bg-card border border-rose-500/30 space-y-4 shadow-sm animate-in fade-in">
+          <div className="w-14 h-14 rounded-full bg-rose-500/15 text-rose-500 mx-auto flex items-center justify-center">
             <AlertCircle className="h-7 w-7" />
           </div>
-          <h1 className="text-xl font-bold text-theme-primary">Guest Invite Link Invalid</h1>
-          <p className="text-sm text-theme-muted leading-relaxed">{error}</p>
+          <h1 className="text-lg font-bold text-theme-primary">Guest Link Invalid</h1>
+          <p className="text-xs text-theme-muted leading-relaxed">{error}</p>
         </div>
       </div>
     );
   }
 
-  // 3. Call Ended Screen
+  // 3. Call Ended State
   if (isCallEnded) {
     return (
       <div className="min-h-screen bg-theme-bg flex items-center justify-center p-6 text-theme-primary">
         <div className="w-full max-w-md text-center p-8 rounded-2xl bg-card border border-theme space-y-5 shadow-sm animate-in fade-in">
-          <div className="w-16 h-16 rounded-full bg-theme-accent/15 border border-theme-accent/30 text-theme-accent mx-auto flex items-center justify-center shadow-sm">
-            <Sparkles className="h-8 w-8" />
+          <div className="w-16 h-16 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-600 dark:text-purple-400 mx-auto flex items-center justify-center shadow-sm">
+            <Eye className="h-8 w-8" />
           </div>
           <div className="space-y-1.5">
-            <h1 className="text-xl font-bold text-theme-primary">Observer Session Concluded</h1>
+            <h1 className="text-xl font-bold text-theme-primary">Observer Session Ended</h1>
             <p className="text-sm text-theme-muted">
-              Thank you for attending the interview with{' '}
-              <span className="text-theme-primary font-semibold">{interviewData.company.name}</span>.
+              You have left the interview observation room.
             </p>
           </div>
           <div className="p-4 rounded-xl bg-surface-subtle border border-theme text-xs text-theme-muted space-y-1">
             <p>Session Duration: {formatTimer(elapsedSeconds)}</p>
-            <p>You may now close this browser window safely.</p>
+            <p>You may now close this browser tab safely.</p>
           </div>
         </div>
       </div>
     );
   }
 
-  // 4. Pre-Join Lobby
+  // 4. Pre-Join Screen (Guest Lobby)
   if (!hasJoinedLobby) {
     return (
       <div className="min-h-screen bg-theme-bg flex flex-col justify-between p-6 text-theme-primary">
         {/* Header */}
         <header className="max-w-5xl mx-auto w-full flex items-center justify-between py-2 border-b border-theme">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md shadow-black/10">
+            <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
               <Eye className="h-4 w-4" />
             </div>
             <div>
@@ -252,19 +258,19 @@ export default function GuestJoinPage() {
                 {interviewData.company.name}
               </span>
               <span className="text-xs text-theme-muted ml-2 font-mono">
-                HR & Guest Observer Portal
+                Guest & HR Observation Portal
               </span>
             </div>
           </div>
 
-          <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-600 dark:text-purple-300 bg-purple-500/10">
-            <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Observer Mode
+          <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-600 dark:text-purple-300 bg-purple-500/10 font-mono">
+            {interviewData.role.replace('_', ' ')}
           </Badge>
         </header>
 
-        {/* Center Lobby */}
+        {/* Center Lobby Content */}
         <main className="max-w-4xl mx-auto w-full my-auto py-8 grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-          {/* Left: Camera Preview */}
+          {/* Left Preview Box */}
           <div className="md:col-span-7 space-y-4">
             <div className="relative aspect-video rounded-2xl bg-black border border-theme overflow-hidden shadow-md flex items-center justify-center">
               <video
@@ -284,7 +290,7 @@ export default function GuestJoinPage() {
                 </div>
               )}
 
-              {/* Floating Controls */}
+              {/* In-preview Floating Controls */}
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-lg">
                 <button
                   type="button"
@@ -314,40 +320,30 @@ export default function GuestJoinPage() {
               </div>
             </div>
             <p className="text-center text-xs text-theme-muted">
-              Check your camera and microphone settings before joining the panel.
+              Configure your audio and camera before entering the observation room.
             </p>
           </div>
 
-          {/* Right: Join Info Form */}
+          {/* Right Details & Join Card */}
           <div className="md:col-span-5 space-y-6">
             <div className="p-6 rounded-2xl bg-card border border-theme space-y-5 shadow-sm">
               <div>
-                <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-300 uppercase tracking-wider font-mono">
-                  {interviewData.role.replace('_', ' ')} Invitation
+                <span className="text-[11px] font-semibold text-purple-500 uppercase tracking-wider font-mono">
+                  Observation Portal
                 </span>
                 <h2 className="text-xl font-bold text-theme-primary mt-1">
                   {interviewData.interviewType.name}
                 </h2>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-theme-primary">Your Display Name</label>
-                <Input
-                  value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  placeholder="e.g. Sarah Connor (HR)"
-                  className="bg-surface border-theme text-theme-primary text-xs"
-                />
-              </div>
-
-              <div className="space-y-3 text-xs text-theme-muted pt-1 border-t border-theme">
+              <div className="space-y-3 text-xs text-theme-muted">
                 <div className="flex items-center gap-2.5">
-                  <User className="h-4 w-4 text-theme-accent shrink-0" />
+                  <User className="h-4 w-4 text-purple-500 shrink-0" />
                   <span>Candidate: <strong className="text-theme-primary">{interviewData.candidate.firstName} {interviewData.candidate.lastName}</strong></span>
                 </div>
 
                 <div className="flex items-center gap-2.5">
-                  <ShieldCheck className="h-4 w-4 text-theme-accent shrink-0" />
+                  <User className="h-4 w-4 text-theme-accent shrink-0" />
                   <span>Lead Interviewer: <strong className="text-theme-primary">{interviewData.interviewerName}</strong></span>
                 </div>
 
@@ -359,12 +355,23 @@ export default function GuestJoinPage() {
                 </div>
               </div>
 
+              {/* Guest Display Name Input */}
+              <div className="space-y-1.5 pt-2 border-t border-theme">
+                <label className="text-xs font-semibold text-theme-primary">Your Display Name</label>
+                <Input
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  placeholder="e.g. Sarah Connor (HR)"
+                  className="bg-surface border-theme text-theme-primary text-xs"
+                />
+              </div>
+
               <div className="pt-2">
                 <Button
                   onClick={handleJoinCall}
                   className="w-full h-11 text-sm gradient-theme-btn font-bold rounded-xl shadow-md"
                 >
-                  Join Panel Interview
+                  Enter Room as Observer
                 </Button>
               </div>
             </div>
@@ -373,17 +380,17 @@ export default function GuestJoinPage() {
 
         {/* Footer */}
         <footer className="text-center text-xs text-theme-muted py-3">
-          Powered by InterviewOS • Panel & Observer Mode
+          Powered by InterviewOS • Secure HR & Guest Observer Bridge
         </footer>
       </div>
     );
   }
 
-  // 5. In-Meeting Video Room (Observer / Guest View)
+  // 5. In-Meeting Video Room with Collaborative Code Editor
   return (
     <div className="min-h-screen bg-theme-bg flex flex-col text-theme-primary">
       {/* Top Bar */}
-      <header className="px-6 py-3 bg-surface border-b border-theme flex items-center justify-between">
+      <header className="px-6 py-2.5 bg-surface border-b border-theme flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-md">
             <Eye className="h-4 w-4" />
@@ -396,6 +403,45 @@ export default function GuestJoinPage() {
               Candidate: {interviewData.candidate.firstName} {interviewData.candidate.lastName} • Lead: {interviewData.interviewerName}
             </p>
           </div>
+        </div>
+
+        {/* View Mode Controls */}
+        <div className="flex items-center gap-1 bg-surface-subtle p-1 rounded-xl border border-theme">
+          <button
+            onClick={() => setViewMode('split')}
+            className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+              viewMode === 'split'
+                ? 'bg-theme-accent text-white shadow-sm'
+                : 'text-theme-muted hover:text-theme-primary'
+            }`}
+          >
+            <Columns className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Split View</span>
+          </button>
+
+          <button
+            onClick={() => setViewMode('code')}
+            className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+              viewMode === 'code'
+                ? 'bg-theme-accent text-white shadow-sm'
+                : 'text-theme-muted hover:text-theme-primary'
+            }`}
+          >
+            <Code2 className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Code Focus</span>
+          </button>
+
+          <button
+            onClick={() => setViewMode('video')}
+            className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+              viewMode === 'video'
+                ? 'bg-theme-accent text-white shadow-sm'
+                : 'text-theme-muted hover:text-theme-primary'
+            }`}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Video Focus</span>
+          </button>
         </div>
 
         <div className="flex items-center gap-3">
@@ -429,139 +475,153 @@ export default function GuestJoinPage() {
       </header>
 
       {/* Main Grid + Sidebar */}
-      <main className="flex-1 p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* Multi-Peer Video Grid */}
-        <div className="lg:col-span-2 space-y-4">
-          {permissionError && (
-            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-300 text-xs flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
-              <span>{permissionError}</span>
-            </div>
-          )}
+      <main className="flex-1 p-4 flex flex-col justify-between space-y-3">
+        {permissionError && (
+          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-300 text-xs flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
+            <span>{permissionError}</span>
+          </div>
+        )}
 
-          <VideoGrid
-            localVideoRef={localVideoRef}
-            localName={`${guestName}`}
-            localRole={interviewData.role}
-            isLocalMicOn={isMicOn}
-            isLocalCameraOn={isCameraOn}
-            isScreenSharing={isScreenSharing}
-            participants={participants}
-            status={status}
-            emptyWaitingMessage="Waiting for interviewers and candidate..."
-          />
-        </div>
+        <div className="w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-[560px]">
+          {/* Main Area: Code Editor or Video Stage based on viewMode */}
+          <div
+            className={`${
+              viewMode === 'video'
+                ? 'lg:col-span-8'
+                : viewMode === 'code'
+                ? 'lg:col-span-9'
+                : 'lg:col-span-8'
+            } flex flex-col min-h-[500px]`}
+          >
+            {viewMode === 'video' ? (
+              <div className="flex-1 flex flex-col justify-center">
+                <VideoGrid
+                  localVideoRef={localVideoRef}
+                  localName={`${guestName}`}
+                  localRole={interviewData.role}
+                  isLocalMicOn={isMicOn}
+                  isLocalCameraOn={isCameraOn}
+                  isScreenSharing={isScreenSharing}
+                  participants={participants}
+                  status={status}
+                  emptyWaitingMessage="Waiting for interviewers and candidate..."
+                />
+              </div>
+            ) : (
+              <CollaborativeCodeEditor
+                meetingRoomId={interviewData.meetingRoomId}
+                socket={socket}
+                userName={guestName}
+              />
+            )}
+          </div>
 
-        {/* Right Sidebar: Observer Notes & Panel Roster */}
-        <aside className="space-y-4">
-          {/* Observer Scratchpad */}
-          <section className="rounded-xl border border-theme bg-card p-4 space-y-3 shadow-sm">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-sm text-theme-primary flex items-center gap-1.5">
-                <FileText className="h-4 w-4 text-theme-accent" />
-                Private Observer Notes
-              </h2>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleCopyNotes}
-                className="h-7 text-xs border-theme text-theme-primary hover:bg-surface-subtle bg-surface"
-              >
-                {copiedNotes ? <Check className="h-3.5 w-3.5 text-emerald-500 mr-1" /> : <Copy className="h-3.5 w-3.5 text-theme-accent mr-1" />}
-                {copiedNotes ? 'Copied' : 'Copy'}
-              </Button>
-            </div>
+          {/* Right Sidebar: Video Grid (in Split/Code mode) + Observer Scratchpad */}
+          <div
+            className={`${
+              viewMode === 'code' ? 'lg:col-span-3' : 'lg:col-span-4'
+            } flex flex-col justify-start gap-3`}
+          >
+            {viewMode !== 'video' && (
+              <div className="h-56 rounded-2xl overflow-hidden border border-theme bg-card shadow-sm">
+                <VideoGrid
+                  localVideoRef={localVideoRef}
+                  localName={`${guestName}`}
+                  localRole={interviewData.role}
+                  isLocalMicOn={isMicOn}
+                  isLocalCameraOn={isCameraOn}
+                  isScreenSharing={isScreenSharing}
+                  participants={participants}
+                  status={status}
+                  emptyWaitingMessage="Waiting for peers..."
+                />
+              </div>
+            )}
 
-            <textarea
-              value={observerNotes}
-              onChange={(e) => setObserverNotes(e.target.value)}
-              placeholder="Record your observations, cultural fit impressions, and HR remarks here..."
-              className="min-h-[220px] w-full rounded-lg bg-surface border border-theme p-3 text-xs text-theme-primary placeholder:text-theme-muted focus:outline-none focus:ring-1 focus:ring-theme-accent font-mono leading-relaxed resize-none"
-            />
-            <p className="text-[11px] text-theme-muted">
-              Notes taken here remain private and are not visible to the candidate.
-            </p>
-          </section>
-
-          {/* Active Participants List */}
-          <section className="rounded-xl border border-theme bg-card p-4 space-y-3 shadow-sm">
-            <h2 className="font-semibold text-xs text-theme-primary uppercase tracking-wider font-mono flex items-center gap-1.5">
-              <Users className="h-3.5 w-3.5 text-theme-accent" />
-              Room Roster ({1 + participants.length})
-            </h2>
-
-            <div className="space-y-2 text-xs">
-              <div className="flex items-center justify-between p-2 rounded-lg bg-surface border border-theme">
-                <span className="font-medium text-theme-primary">{guestName} (You)</span>
-                <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-600 dark:text-purple-300 font-mono">
-                  {interviewData.role.replace('_', ' ')}
-                </Badge>
+            {/* Observer Scratchpad */}
+            <section className="flex-1 rounded-2xl border border-theme bg-card p-4 space-y-3 shadow-sm flex flex-col">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-xs text-theme-primary flex items-center gap-1.5 font-mono uppercase tracking-wider">
+                  <FileText className="h-4 w-4 text-theme-accent" />
+                  Private Observer Notes
+                </h2>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCopyNotes}
+                  className="h-7 text-xs border-theme text-theme-primary hover:bg-surface-subtle bg-surface"
+                >
+                  {copiedNotes ? <Check className="h-3.5 w-3.5 text-emerald-500 mr-1" /> : <Copy className="h-3.5 w-3.5 text-theme-accent mr-1" />}
+                  {copiedNotes ? 'Copied' : 'Copy'}
+                </Button>
               </div>
 
-              {participants.map((p) => (
-                <div key={p.socketId} className="flex items-center justify-between p-2 rounded-lg bg-surface-subtle border border-theme">
-                  <span className="font-medium text-theme-primary">{p.name}</span>
-                  <Badge variant="outline" className="text-[10px] border-theme font-mono">
-                    {p.role.replace('_', ' ')}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </section>
-        </aside>
+              <textarea
+                value={observerNotes}
+                onChange={(e) => setObserverNotes(e.target.value)}
+                placeholder="Record private behavioral observations, culture fit impressions, and remarks..."
+                className="flex-1 min-h-[140px] w-full rounded-xl bg-surface border border-theme p-3 text-xs text-theme-primary placeholder:text-theme-muted focus:outline-none focus:ring-1 focus:ring-theme-accent font-mono leading-relaxed resize-none"
+              />
+              <p className="text-[11px] text-theme-muted">
+                Notes taken here remain strictly confidential and are not visible to the candidate.
+              </p>
+            </section>
+          </div>
+        </div>
       </main>
 
       {/* Floating Bottom Control Bar */}
-      <footer className="py-4 px-6 bg-surface border-t border-theme flex items-center justify-center gap-4">
+      <footer className="py-3 px-6 bg-surface border-t border-theme flex items-center justify-center gap-3">
         <Button
           variant="outline"
-          size="lg"
+          size="sm"
           onClick={toggleMic}
-          className={`rounded-full w-12 h-12 p-0 border transition-all ${
+          className={`rounded-full w-10 h-10 p-0 border transition-all ${
             isMicOn
               ? 'border-theme bg-surface text-theme-primary hover:bg-surface-subtle'
               : 'border-rose-500/50 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20'
           }`}
           title={isMicOn ? 'Mute Microphone' : 'Unmute Microphone'}
         >
-          {isMicOn ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+          {isMicOn ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
         </Button>
 
         <Button
           variant="outline"
-          size="lg"
+          size="sm"
           onClick={toggleCamera}
-          className={`rounded-full w-12 h-12 p-0 border transition-all ${
+          className={`rounded-full w-10 h-10 p-0 border transition-all ${
             isCameraOn
               ? 'border-theme bg-surface text-theme-primary hover:bg-surface-subtle'
               : 'border-rose-500/50 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20'
           }`}
           title={isCameraOn ? 'Turn Off Camera' : 'Turn On Camera'}
         >
-          {isCameraOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+          {isCameraOn ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
         </Button>
 
         <Button
           variant="outline"
-          size="lg"
+          size="sm"
           onClick={toggleScreenShare}
-          className={`rounded-full w-12 h-12 p-0 border transition-all ${
+          className={`rounded-full w-10 h-10 p-0 border transition-all ${
             isScreenSharing
               ? 'border-theme bg-theme-accent text-white'
               : 'border-theme bg-surface text-theme-primary hover:bg-surface-subtle'
           }`}
           title={isScreenSharing ? 'Stop Screen Sharing' : 'Share Screen'}
         >
-          <ScreenShare className="h-5 w-5" />
+          <ScreenShare className="h-4 w-4" />
         </Button>
 
         <Button
           variant="destructive"
-          size="lg"
+          size="sm"
           onClick={handleEndCall}
-          className="rounded-full px-6 h-12 bg-rose-600 hover:bg-rose-700 text-white font-bold gap-2 shadow-md shadow-rose-600/30"
+          className="rounded-full px-5 h-10 bg-rose-600 hover:bg-rose-700 text-white font-bold gap-1.5 shadow-md shadow-rose-600/30 text-xs"
         >
-          <PhoneOff className="h-5 w-5" />
+          <PhoneOff className="h-4 w-4" />
           <span>Leave</span>
         </Button>
       </footer>

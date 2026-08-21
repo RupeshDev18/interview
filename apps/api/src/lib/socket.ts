@@ -14,6 +14,8 @@ export function initSocketServer(httpServer: HttpServer) {
       origin: env.CORS_ORIGINS.split(',').map((x) => x.trim()),
       credentials: true,
     },
+    pingTimeout: 10000,
+    pingInterval: 5000,
   });
 
   io.use(async (socket, next) => {
@@ -38,6 +40,7 @@ export function initSocketServer(httpServer: HttpServer) {
             name: `${candidateDetails.candidate.firstName} ${candidateDetails.candidate.lastName}`,
             meetingRoomId: candidateDetails.meetingRoomId,
             interviewId: candidateDetails.interviewId,
+            identifier: `candidate:${candidateDetails.candidate.id}`,
           };
           return next();
         } catch {
@@ -55,6 +58,7 @@ export function initSocketServer(httpServer: HttpServer) {
             name: guestDetails.guestName || (guestDetails.role === ParticipantRole.HR_OBSERVER ? 'HR Observer' : 'Guest'),
             meetingRoomId: guestDetails.meetingRoomId,
             interviewId: guestDetails.interviewId,
+            identifier: `guest:${guestToken}`,
           };
           return next();
         } catch {
@@ -69,7 +73,7 @@ export function initSocketServer(httpServer: HttpServer) {
           socket.data.user = payload;
           return next();
         } catch {
-          // Token might be a candidate token or guest token passed in 'token' parameter
+          // Token might be candidate or guest token passed in 'token' parameter
           try {
             const candidateDetails = await candidateLinkService.verifyToken(userToken);
             socket.data.participant = {
@@ -78,6 +82,7 @@ export function initSocketServer(httpServer: HttpServer) {
               name: `${candidateDetails.candidate.firstName} ${candidateDetails.candidate.lastName}`,
               meetingRoomId: candidateDetails.meetingRoomId,
               interviewId: candidateDetails.interviewId,
+              identifier: `candidate:${candidateDetails.candidate.id}`,
             };
             return next();
           } catch {
@@ -89,6 +94,7 @@ export function initSocketServer(httpServer: HttpServer) {
                 name: guestDetails.guestName || 'Guest',
                 meetingRoomId: guestDetails.meetingRoomId,
                 interviewId: guestDetails.interviewId,
+                identifier: `guest:${userToken}`,
               };
               return next();
             } catch {
@@ -118,6 +124,9 @@ export function initSocketServer(httpServer: HttpServer) {
         }) => void,
       ) => {
         try {
+          let participant: any = null;
+          let roomName = '';
+
           // Case A: Pre-verified Candidate or Guest
           if (socket.data.participant) {
             const p = socket.data.participant;
@@ -128,26 +137,12 @@ export function initSocketServer(httpServer: HttpServer) {
               return done?.({ ok: false, error: 'Unauthorized for this room' });
             }
 
-            const roomName = `interview:${p.meetingRoomId}`;
-
-            // Fetch existing peers in the room before joining
-            const socketsInRoom = await io.in(roomName).fetchSockets();
-            const existingParticipants = socketsInRoom
-              .filter((s) => s.id !== socket.id && s.data.participant)
-              .map((s) => s.data.participant);
-
-            socket.join(roomName);
-            socket.to(roomName).emit('participant-joined', p);
-
-            return done?.({
-              ok: true,
-              participant: p,
-              existingParticipants,
-            });
+            participant = p;
+            roomName = `interview:${p.meetingRoomId}`;
           }
 
           // Case B: Authenticated User (Lead Interviewer, Co-Interviewer, Recruiter, Admin)
-          if (socket.data.user) {
+          else if (socket.data.user) {
             const interview = await prisma.interview.findFirst({
               where: {
                 OR: [{ meetingRoomId }, { id: meetingRoomId }],
@@ -203,33 +198,52 @@ export function initSocketServer(httpServer: HttpServer) {
               select: { firstName: true, lastName: true },
             });
 
-            const participant = {
+            participant = {
               socketId: socket.id,
               role,
               name: dbUser ? `${dbUser.firstName} ${dbUser.lastName}` : 'Interviewer',
               meetingRoomId: interview.meetingRoomId,
               interviewId: interview.id,
+              identifier: `user:${user.sub}`,
             };
 
             socket.data.participant = participant;
-            const roomName = `interview:${interview.meetingRoomId}`;
-
-            const socketsInRoom = await io.in(roomName).fetchSockets();
-            const existingParticipants = socketsInRoom
-              .filter((s) => s.id !== socket.id && s.data.participant)
-              .map((s) => s.data.participant);
-
-            socket.join(roomName);
-            socket.to(roomName).emit('participant-joined', participant);
-
-            return done?.({
-              ok: true,
-              participant,
-              existingParticipants,
-            });
+            roomName = `interview:${interview.meetingRoomId}`;
+          } else {
+            return done?.({ ok: false, error: 'Unauthorized: No session found' });
           }
 
-          return done?.({ ok: false, error: 'Unauthorized: No session found' });
+          // ─── EVICT OLD/STALE GHOST CONNECTIONS FOR SAME IDENTITY ───────────
+          const socketsInRoom = await io.in(roomName).fetchSockets();
+          for (const s of socketsInRoom) {
+            if (s.id !== socket.id && s.data.participant) {
+              const sameUser =
+                s.data.participant.identifier &&
+                participant.identifier &&
+                s.data.participant.identifier === participant.identifier;
+
+              if (sameUser) {
+                s.leave(roomName);
+                s.disconnect(true);
+                socket.to(roomName).emit('participant-left', { socketId: s.id });
+              }
+            }
+          }
+
+          // Fetch deduplicated existing peers in the room
+          const remainingSockets = await io.in(roomName).fetchSockets();
+          const existingParticipants = remainingSockets
+            .filter((s) => s.id !== socket.id && s.data.participant)
+            .map((s) => s.data.participant);
+
+          socket.join(roomName);
+          socket.to(roomName).emit('participant-joined', participant);
+
+          return done?.({
+            ok: true,
+            participant,
+            existingParticipants,
+          });
         } catch (err) {
           logger.error('Error joining interview room socket', { error: err });
           return done?.({ ok: false, error: 'Internal server error' });
@@ -279,12 +293,99 @@ export function initSocketServer(httpServer: HttpServer) {
       },
     );
 
+    // ─── Real-Time Collaborative Code Editor Sync ──────────────────────────────
+    socket.on(
+      'code-change',
+      ({
+        meetingRoomId,
+        code,
+        language,
+        senderName,
+      }: {
+        meetingRoomId: string;
+        code: string;
+        language: string;
+        senderName?: string;
+      }) => {
+        const roomName = `interview:${meetingRoomId}`;
+        socket.to(roomName).emit('code-change', {
+          from: socket.id,
+          code,
+          language,
+          senderName,
+        });
+      },
+    );
+
+    socket.on(
+      'code-run-output',
+      ({
+        meetingRoomId,
+        output,
+        executionTime,
+        status,
+        runnerName,
+      }: {
+        meetingRoomId: string;
+        output: string;
+        executionTime: number;
+        status: 'success' | 'error';
+        runnerName?: string;
+      }) => {
+        const roomName = `interview:${meetingRoomId}`;
+        socket.to(roomName).emit('code-run-output', {
+          from: socket.id,
+          output,
+          executionTime,
+          status,
+          runnerName,
+        });
+      },
+    );
+
+    socket.on(
+      'request-code-sync',
+      ({ meetingRoomId }: { meetingRoomId: string }) => {
+        const roomName = `interview:${meetingRoomId}`;
+        socket.to(roomName).emit('request-code-sync', { requesterId: socket.id });
+      },
+    );
+
+    socket.on(
+      'code-sync-state',
+      ({
+        meetingRoomId,
+        code,
+        language,
+        to,
+      }: {
+        meetingRoomId: string;
+        code: string;
+        language: string;
+        to: string;
+      }) => {
+        io.to(to).emit('code-change', {
+          from: socket.id,
+          code,
+          language,
+          isSyncInitial: true,
+        });
+      },
+    );
+
     socket.on('disconnecting', () => {
       socket.rooms.forEach((room) => {
         if (room.startsWith('interview:')) {
           socket.to(room).emit('participant-left', { socketId: socket.id });
         }
       });
+    });
+
+    socket.on('disconnect', () => {
+      if (socket.data.participant?.meetingRoomId) {
+        const room = `interview:${socket.data.participant.meetingRoomId}`;
+        socket.to(room).emit('participant-left', { socketId: socket.id });
+      }
     });
   });
 
