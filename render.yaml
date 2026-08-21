@@ -40,9 +40,6 @@ services:
       - key: CORS_ORIGINS
         value: https://intvwplt-web.onrender.com
 
-      - key: REDIS_URL
-        value: redis://localhost:6379
-
       - key: RATE_LIMIT_WINDOW_MS
         value: "60000"
 

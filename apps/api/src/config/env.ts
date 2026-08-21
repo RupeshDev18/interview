@@ -23,7 +23,7 @@ const envSchema = z.object({
   REFRESH_TOKEN_EXPIRES_IN: z.string().default('7d'),
 
   // Redis
-  REDIS_URL: z.string().default('redis://localhost:6379'),
+  REDIS_URL: z.string().optional(),
 
   // Kafka
   KAFKA_BROKERS: z.string().default('localhost:9092'),

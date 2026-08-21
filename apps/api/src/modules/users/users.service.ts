@@ -43,9 +43,9 @@ export const usersService = {
       passwordHash,
       firstName: data.firstName,
       lastName: data.lastName,
-      phone: data.phone,
+      phone: data.phone || undefined,
       role: data.role as UserRole,
-      companyId: data.companyId,
+      companyId: data.companyId || undefined,
     });
 
     return sanitizeUser(user);
@@ -53,7 +53,16 @@ export const usersService = {
 
   async update(id: string, data: UpdateUserInput) {
     await usersService.getById(id);
-    return usersRepository.update(id, data);
+
+    const updatePayload: any = {};
+    if (data.firstName !== undefined) updatePayload.firstName = data.firstName;
+    if (data.lastName !== undefined) updatePayload.lastName = data.lastName;
+    if (data.role !== undefined) updatePayload.role = data.role as UserRole;
+    if (data.isActive !== undefined) updatePayload.isActive = data.isActive;
+    if (data.phone !== undefined) updatePayload.phone = data.phone || null;
+    if (data.companyId !== undefined) updatePayload.companyId = data.companyId || null;
+
+    return usersRepository.update(id, updatePayload);
   },
 
   async delete(id: string) {

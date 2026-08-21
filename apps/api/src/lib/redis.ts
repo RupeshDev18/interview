@@ -4,44 +4,58 @@ import { logger } from './logger';
 
 let redisClient: Redis | null = null;
 
-export function getRedisClient(): Redis {
-  if (!redisClient) {
-    redisClient = new Redis(env.REDIS_URL, {
-      maxRetriesPerRequest: 3,
-      retryStrategy: (times) => {
-        if (times > 5) {
-          logger.error('Redis: max retries reached');
-          return null;
-        }
-        return Math.min(times * 200, 2000);
-      },
-      reconnectOnError: (err) => {
-        logger.error('Redis connection error', { error: err.message });
-        return true;
-      },
-    });
+export function getRedisClient(): Redis | null {
+  if (!env.REDIS_URL) {
+    return null;
+  }
 
-    redisClient.on('connect', () => logger.info('Redis connected'));
-    redisClient.on('error', (err) => logger.error('Redis error', { error: err.message }));
-    redisClient.on('close', () => logger.warn('Redis connection closed'));
+  if (!redisClient) {
+    try {
+      redisClient = new Redis(env.REDIS_URL, {
+        maxRetriesPerRequest: 2,
+        lazyConnect: true,
+        retryStrategy: (times) => {
+          if (times > 3) {
+            logger.warn('Redis: max retries reached, skipping redis operations');
+            return null;
+          }
+          return Math.min(times * 200, 1000);
+        },
+        reconnectOnError: () => false,
+      });
+
+      redisClient.on('connect', () => logger.info('Redis connected'));
+      redisClient.on('error', (err) => logger.warn('Redis connection not available (running in memory/no-cache mode)', { error: err.message }));
+      redisClient.on('close', () => logger.warn('Redis connection closed'));
+    } catch (err: any) {
+      logger.warn('Failed to initialize Redis client', { error: err.message });
+      return null;
+    }
   }
   return redisClient;
 }
 
 export async function disconnectRedis(): Promise<void> {
   if (redisClient) {
-    await redisClient.quit();
+    try {
+      await redisClient.quit();
+    } catch {
+      // ignore
+    }
     redisClient = null;
-    logger.info('Redis disconnected');
   }
 }
 
-// Typed helpers
+// Safe typed helpers
 export const redis = {
-  get: async (key: string): Promise<string | null> => getRedisClient().get(key),
+  get: async (key: string): Promise<string | null> => {
+    const client = getRedisClient();
+    return client ? client.get(key) : null;
+  },
 
   set: async (key: string, value: string, ttlSeconds?: number): Promise<void> => {
     const client = getRedisClient();
+    if (!client) return;
     if (ttlSeconds) {
       await client.setex(key, ttlSeconds, value);
     } else {
@@ -50,27 +64,39 @@ export const redis = {
   },
 
   del: async (...keys: string[]): Promise<void> => {
-    await getRedisClient().del(...keys);
+    const client = getRedisClient();
+    if (!client || keys.length === 0) return;
+    await client.del(...keys);
   },
 
   exists: async (key: string): Promise<boolean> => {
-    const result = await getRedisClient().exists(key);
+    const client = getRedisClient();
+    if (!client) return false;
+    const result = await client.exists(key);
     return result === 1;
   },
 
-  incr: async (key: string): Promise<number> => getRedisClient().incr(key),
-
-  expire: async (key: string, ttlSeconds: number): Promise<void> => {
-    await getRedisClient().expire(key, ttlSeconds);
+  incr: async (key: string): Promise<number> => {
+    const client = getRedisClient();
+    return client ? client.incr(key) : 1;
   },
 
-  // Distributed lock: returns true if lock acquired
+  expire: async (key: string, ttlSeconds: number): Promise<void> => {
+    const client = getRedisClient();
+    if (!client) return;
+    await client.expire(key, ttlSeconds);
+  },
+
   acquireLock: async (key: string, ttlSeconds: number): Promise<boolean> => {
-    const result = await getRedisClient().set(key, '1', 'EX', ttlSeconds, 'NX');
+    const client = getRedisClient();
+    if (!client) return true; // optimistic pass-through if no redis
+    const result = await client.set(key, '1', 'EX', ttlSeconds, 'NX');
     return result === 'OK';
   },
 
   releaseLock: async (key: string): Promise<void> => {
-    await getRedisClient().del(key);
+    const client = getRedisClient();
+    if (!client) return;
+    await client.del(key);
   },
 };

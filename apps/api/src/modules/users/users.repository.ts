@@ -38,6 +38,7 @@ export const usersRepository = {
           createdAt: true,
           updatedAt: true,
           lastLoginAt: true,
+          company: { select: { id: true, name: true } },
           // Never select passwordHash
         },
       }),
@@ -68,14 +69,31 @@ export const usersRepository = {
     });
   },
 
-  async update(id: string, data: Partial<{ firstName: string; lastName: string; phone: string; isActive: boolean; companyId: string }>) {
+  async update(
+    id: string,
+    data: Partial<{
+      firstName: string;
+      lastName: string;
+      phone: string | null;
+      role: UserRole;
+      isActive: boolean;
+      companyId: string | null;
+    }>,
+  ) {
     return prisma.user.update({
       where: { id },
       data,
       select: {
-        id: true, email: true, firstName: true, lastName: true,
-        phone: true, role: true, isActive: true, companyId: true,
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        companyId: true,
         updatedAt: true,
+        company: { select: { id: true, name: true } },
       },
     });
   },
